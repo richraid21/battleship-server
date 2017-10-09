@@ -1,8 +1,9 @@
 import auth from './auth'
 
-//Constants & Setup
+// Constants & Setup
 const baseRoute = '/api/'
-let path, category
+let category = ''
+let path = ''
 const getPath = () => `${baseRoute}/${category}/${path}`
 
 const routes = (app) => {

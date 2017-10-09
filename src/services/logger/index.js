@@ -16,4 +16,4 @@ winston.add(winston.transports.Console, {
     silent: false,
     timestamp: false
 })
-//winston.add(winston.transports.File, { filename: "../../../logs/app.log" })
+// Winston.add(winston.transports.File, { filename: "../../../logs/app.log" })

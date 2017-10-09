@@ -1,7 +1,4 @@
 import routes from 'routes'
 
-
-
-export default api = {
-    routes: routes
-}
+const api = { routes }
+export default api

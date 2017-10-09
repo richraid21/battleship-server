@@ -1,0 +1,24 @@
+{
+  "name": "battleship-server",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "Rich Dillon & Will Karras",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^1.0.3",
+    "knex": "^0.13.0",
+    "lodash": "^4.17.4",
+    "pg": "^7.3.0",
+    "restify": "^6.0.1",
+    "socket.io": "^2.0.3",
+    "winston": "^2.4.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-preset-env": "^1.6.0"
+  },
+  "scripts": {
+    "build": "babel src --out-dir lib --copy-files"
+  }
+}

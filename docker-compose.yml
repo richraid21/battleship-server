@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+
+  server:
+    build: '.'
+    container_name: 'bs-app'
+    ports:
+      - '8080:8080'
+
+  postgres:
+    image: 'postgres:9.6'
+    container_name: 'bs-postgres'
+    environment:
+      - 'POSTGRES_PASSWORD=pixi3'
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_DB=battleship'
+    ports:
+      - '5432:5432'

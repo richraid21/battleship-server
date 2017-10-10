@@ -14,6 +14,8 @@ winston.add(winston.transports.Console, {
     prettyPrint: true,
     colorize: true,
     silent: false,
-    timestamp: false
+    timestamp: true
 })
+
+winston.debug('Logger Started')
 // Winston.add(winston.transports.File, { filename: "../../../logs/app.log" })

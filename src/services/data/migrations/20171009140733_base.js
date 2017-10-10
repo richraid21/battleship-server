@@ -7,7 +7,6 @@ exports.up = function(knex, Promise) {
         .createTable('user', (t) => {
             t.increments('id')
             t.text('nickname')
-            t.text('salt')
             t.text('hash')
             t.timestamp('datecreated').defaultTo(knex.fn.now())
         })
@@ -17,6 +16,7 @@ exports.up = function(knex, Promise) {
             t.text('number')
             t.integer('user')
             t.datetime('expires')
+            t.boolean('active').defaultTo(1)
             t.timestamp('datecreated').defaultTo(knex.fn.now())
 
             t.foreign('user').references('user.id')

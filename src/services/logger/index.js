@@ -16,4 +16,6 @@ winston.add(winston.transports.Console, {
     silent: false,
     timestamp: false
 })
+
+winston.info('Logger Started')
 // Winston.add(winston.transports.File, { filename: "../../../logs/app.log" })

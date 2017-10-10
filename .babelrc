@@ -1,4 +1,10 @@
 {
     "plugins": ["transform-strict-mode"],
-    "presets": ["env"]
+    "presets": [
+        ["env", {
+          "targets": {
+            "node": "8.6"
+          }
+        }]
+      ]
 }

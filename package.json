@@ -19,13 +19,24 @@
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
     "babel-preset-env": "^1.6.0",
     "eslint": "^4.8.0",
-    "eslint-plugin-security": "^1.4.0"
+    "eslint-plugin-security": "^1.4.0",
+    "jest": "^21.2.1",
+    "superagent": "^3.6.3",
+    "supertest": "^3.0.0"
+  },
+  "jest": {
+    "forceExit": true,
+    "testEnvironment": "node",
+    "automock": false,
+    "verbose": true,
+    "roots": ["<rootDir>/test/"]
   },
   "scripts": {
     "build": "babel src --out-dir lib --copy-files",
     "lint": "eslint src/**/*",
-    "launch": "node ./lib/main.js",
+    "launch": "node ./lib/server.js",
     "start": "yarn build && yarn launch",
-    "docs": "apidoc -i src/api/routes -o docs/"
+    "docs": "apidoc -i src/api/routes -o docs/",
+    "test": "jest"
   }
 }

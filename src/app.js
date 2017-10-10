@@ -9,7 +9,7 @@ import routes from './api/routes'
 const logger = require('./services/logger')
 const knex = require('./services/data')
 
-const startApplication = async () => {
+export const initializeApplication = async () => {
   winston.info('Application Starting...')
 
   await migrateToLatest()
@@ -26,13 +26,24 @@ const startApplication = async () => {
   socketEngine.on('connection', () => {
     winston.silly('User connected')
   })
-  
-  server.listen(8080, function() {
-    winston.info(`Running @ ${server.url}`)
-  })
+
+  return server
 }
 
-startApplication()
+export const basicServer = () => {
+  const server = restify.createServer()
+
+  server.use(restify.plugins.bodyParser())
+  server.use((req, res, next) => {
+    req._knex = knex.default
+    return next()
+  })
+  routes(server)
+  
+  return server
+}
+
+
 
 
 

@@ -7,7 +7,6 @@ exports.up = function(knex, Promise) {
         .createTable('user', (t) => {
             t.increments('id')
             t.text('nickname')
-            t.text('salt')
             t.text('hash')
             t.timestamp('datecreated').defaultTo(knex.fn.now())
         })

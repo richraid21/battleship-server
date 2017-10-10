@@ -1,6 +1,6 @@
 # Battleship Server
 
-## Instructions
+## Usage Instructions
 
 ### Basic
 
@@ -27,4 +27,14 @@ Build & Run the application
 
 ```console
 yarn build && node lib/main.js
+``` 
+
+### Generate API Documentation
+
+API Docs are generated with `apiDoc`
+
+```console
+yarn docs
 ```
+
+Navigate to /docs and launch index.html

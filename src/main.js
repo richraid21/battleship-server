@@ -10,6 +10,8 @@ const logger = require('./services/logger')
 const knex = require('./services/data')
 
 const startApplication = async () => {
+  winston.info('Application Starting...')
+
   await migrateToLatest()
 
   const server = restify.createServer()
@@ -26,7 +28,7 @@ const startApplication = async () => {
   })
   
   server.listen(8080, function() {
-    winston.info(`Server alive at ${server.url}`)
+    winston.info(`Running @ ${server.url}`)
   })
 }
 

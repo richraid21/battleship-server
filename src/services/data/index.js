@@ -5,9 +5,15 @@ import dbConfig from '../../knexfile'
 const knex = require('knex')(dbConfig)
 
 export const migrateToLatest = async () => {
-    const migration = await knex.migrate.latest()
-    const version = await knex.migrate.currentVersion()
-    winston.info(`Current Database Schema: #${version}`)
+
+    try {
+        const migration = await knex.migrate.latest()
+        const version = await knex.migrate.currentVersion()
+        winston.info(`Database Schema: #${version}`)
+    } catch (err) {
+        winston.log('error', 'Unable to migrate to latest database schema', err)
+        process.exit(-1)
+    } 
 }
 
 export default knex

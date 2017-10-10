@@ -22,6 +22,8 @@
   },
   "scripts": {
     "build": "babel src --out-dir lib --copy-files",
-    "lint": "eslint src/**/*"
+    "lint": "eslint src/**/*",
+    "launch": "node ./lib/main.js",
+    "start": "yarn build && yarn launch"
   }
 }

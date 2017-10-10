@@ -10,10 +10,10 @@ var databaseConfig = {
         database: env.BS_DB_DATABASE || 'battleship' 
     },
     migrations: {
-        directory: './src/services/data/migrations'
+        directory: __dirname + '/services/data/migrations'
     },
     seeds: {
-        directory: './src/services/data/seeds'
+        directory: __dirname + './services/data/seeds'
     }
 }
 

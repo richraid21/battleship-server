@@ -17,6 +17,7 @@ exports.up = function(knex, Promise) {
             t.text('number')
             t.integer('user')
             t.datetime('expires')
+            t.boolean('active').defaultTo(1)
             t.timestamp('datecreated').defaultTo(knex.fn.now())
 
             t.foreign('user').references('user.id')

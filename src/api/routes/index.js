@@ -18,10 +18,13 @@ const routes = (app) => {
         app.post(getPath(), auth.login)
 
         path = 'refresh'
-        app.get(getPath(), auth.refresh)
+        app.post(getPath(), auth.refresh)
 
         path = 'logout'
         app.post(getPath(), auth.logout)
+
+        path= 'me'
+        app.get(getPath(), auth.me)
 }
 
 export default routes

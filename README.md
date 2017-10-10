@@ -29,6 +29,12 @@ Build & Run the application
 yarn build && node lib/server.js
 ``` 
 
+### Tests
+
+```console
+yarn test
+```
+
 ### Generate API Documentation
 
 API Docs are generated with `apiDoc`

@@ -20,7 +20,7 @@ docker-compose up -d bs-postgres
 Run the schema migrations
 
 ```console
-yarn run knex migrate:latest
+yarn run knex:ml
 ```
 
 Build & Run the application

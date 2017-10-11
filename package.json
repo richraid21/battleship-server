@@ -32,6 +32,8 @@
     "roots": ["<rootDir>/test/"]
   },
   "scripts": {
+    "knex:ml":"knex --knexfile=src/knexfile.js migrate:latest",
+    "knex:rb":"knex --knexfile=src/knexfile.js migrate:rollback",
     "build": "babel src --out-dir lib --copy-files",
     "lint": "eslint src/**/*",
     "launch": "node ./lib/server.js",

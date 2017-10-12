@@ -1,4 +1,5 @@
 import auth from './auth'
+import { game, games } from './games'
 
 // Constants & Setup
 const baseRoute = '/api/'
@@ -103,9 +104,28 @@ const routes = (app) => {
          * @apiError {String}   message The reason for the failure.
          * 
          */
-        path= 'me'
+        path = 'me'
         app.get(getPath(), auth.me)
-}
+
+    // Games Collection Routes
+    category = 'games'
+    
+        path = ''
+        app.get(getPath(), games.get)
+
+        path = ''
+        app.post(getPath(), games.create)
+
+    // Game Routes
+    category = 'games'
+        
+        path = '/:id'
+        app.get(getPath(), game.get)
+
+        path = '/:id'
+        app.delete(getPath(), game.remove)
+
+    }
 
 export default routes
 

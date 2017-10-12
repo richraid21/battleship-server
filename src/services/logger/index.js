@@ -7,7 +7,7 @@ winston.addColors({
     info: 'green',
     warn: 'yellow',
     error: 'red'
-  })
+})
 
 winston.remove(winston.transports.Console)
 winston.add(winston.transports.Console, {

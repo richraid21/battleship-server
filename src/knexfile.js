@@ -13,7 +13,7 @@ var databaseConfig = {
         directory: __dirname + '/services/data/migrations'
     },
     seeds: {
-        directory: __dirname + './services/data/seeds'
+        directory: __dirname + '/services/data/seeds'
     }
 }
 

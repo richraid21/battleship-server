@@ -22,17 +22,6 @@ exports.up = function(knex, Promise) {
 
             t.foreign('user').references('user.id')
         })
-
-        .createTable('game', (t) => {
-            t.increments('id')
-            t.integer('player1')
-            t.integer('player2')
-            t.text('name')
-            t.timestamp('datecreated').defaultTo(knex.fn.now())
-            
-            t.foreign('player1').references('user.id')
-            t.foreign('player2').references('user.id')
-        })
 };
 
 exports.down = function(knex, Promise) {
@@ -42,14 +31,6 @@ exports.down = function(knex, Promise) {
         .table('session', (t) => {
             t.dropForeign('user')
         })
-        .table('game', (t) => {
-            t.dropForeign('player1')
-            t.dropForeign('player2')
-        })
-
         .dropTable('user')
         .dropTable('session')
-        .dropTable('game')
-        
-    
 };

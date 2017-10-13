@@ -23,6 +23,10 @@ exports.up = function(knex, Promise) {
             t.text('description')
             t.specificType('stages', 'jsonb[]')
         })
+
+        .createTable('board_type', () => {
+            
+        })
     
         .createTable('game', (t) => {
             t.increments('id')

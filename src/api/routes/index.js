@@ -123,7 +123,7 @@ const routes = (app) => {
         app.get(getPath(), game.get)
 
         path = '/:id'
-        app.delete(getPath(), game.remove)
+        app.del(getPath(), game.remove)
 
     }
 

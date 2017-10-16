@@ -32,7 +32,7 @@ exports.up = function(knex, Promise) {
             t.increments('id')
             t.text('name')
             t.integer('status')
-            t.integer('player1')
+            t.integer('player1').notNullable()
             t.integer('player2')
             t.timestamp('datecreated').defaultTo(knex.fn.now())
 

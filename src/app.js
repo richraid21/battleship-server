@@ -16,6 +16,22 @@ export const initializeApplication = async () => {
 
   const server = restify.createServer()
   server.use(restify.plugins.bodyParser())
+
+  if (process.env.NODE_ENV='dev'){
+    winston.warn('dev-mode detected. Enables CORS(*). Disable in production')
+    const corsMiddleware = require('restify-cors-middleware')
+    
+    const cors = corsMiddleware({
+      origins: ['*'],
+      allowHeaders: ['*'],
+      exposeHeaders: ['*']
+    })
+    
+    server.pre(cors.preflight)
+    server.use(cors.actual)
+  }
+
+
   server.use((req, res, next) => {
     req._knex = knex.default
     return next()

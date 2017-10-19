@@ -26,6 +26,7 @@ yarn run knex:ml
 Build & Run the application
 
 ```console
+SET NODE_ENV=dev
 yarn build && node lib/server.js
 ``` 
 

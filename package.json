@@ -10,6 +10,7 @@
     "lodash": "^4.17.4",
     "pg": "^7.3.0",
     "restify": "^6.0.1",
+    "restify-cors-middleware": "^1.0.1",
     "socket.io": "^2.0.3",
     "winston": "^2.4.0"
   },
@@ -29,14 +30,16 @@
     "testEnvironment": "node",
     "automock": false,
     "verbose": true,
-    "roots": ["<rootDir>/test/"]
+    "roots": [
+      "<rootDir>/test/"
+    ]
   },
   "scripts": {
-    "knex:ml":"knex --knexfile=src/knexfile.js migrate:latest",
-    "knex:rb":"knex --knexfile=src/knexfile.js migrate:rollback",
-    "knex:m-make":"knex --knexfile=src/knexfile.js migrate:make",
-    "knex:s-make":"knex --knexfile=src/knexfile.js seed:make",
-    "knex:seed":"knex --knexfile=src/knexfile.js seed:run",
+    "knex:ml": "knex --knexfile=src/knexfile.js migrate:latest",
+    "knex:rb": "knex --knexfile=src/knexfile.js migrate:rollback",
+    "knex:m-make": "knex --knexfile=src/knexfile.js migrate:make",
+    "knex:s-make": "knex --knexfile=src/knexfile.js seed:make",
+    "knex:seed": "knex --knexfile=src/knexfile.js seed:run",
     "build": "babel src --out-dir lib --copy-files",
     "lint": "eslint src/**/*",
     "launch": "node ./lib/server.js",

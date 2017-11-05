@@ -110,18 +110,80 @@ const routes = (app) => {
     // Games Collection Routes
     category = 'games'
     
+        /**
+         * @api {get} /games  Get All Public Games
+         * @apiDescription      Get a listing of all current game sessions
+         * @apiVersion 1.0.0
+         * @apiName getGames
+         * @apiGroup Games
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         * 
+         * @apiSuccess {Object} stuff The game information.
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
         path = ''
         app.get(getPath(), games.get)
 
+        /**
+         * @api {post} /games  Create Game
+         * @apiDescription      Create a game
+         * @apiVersion 1.0.0
+         * @apiName postGames
+         * @apiGroup Games
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         * 
+         * @apiParam {String}   name
+         * 
+         * @apiSuccess {Object} stuff The game information.
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
         path = ''
         app.post(getPath(), games.create)
 
     // Game Routes
     category = 'games'
         
+        /**
+         * @api {get} /games/id  Get Game
+         * @apiDescription      Get information about a specific game
+         * @apiVersion 1.0.0
+         * @apiName getGame
+         * @apiGroup Game
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         *
+         * @apiParam {String} gameid The id of the game
+         * 
+         * @apiSuccess {Object} stuff The game information.
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
         path = '/:id'
         app.get(getPath(), game.get)
 
+        /**
+         * @api {delete} /games/id  Remove Game
+         * @apiDescription      Delete specified game
+         * @apiVersion 1.0.0
+         * @apiName deleteGame
+         * @apiGroup Game
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         *
+         * @apiParam {String} gameid The id of the game
+         * 
+         * @apiSuccess {Object} stuff The game information.
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
         path = '/:id'
         app.del(getPath(), game.remove)
 

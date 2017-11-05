@@ -154,7 +154,7 @@ const routes = (app) => {
          * @apiDescription      Get information about a specific game
          * @apiVersion 1.0.0
          * @apiName getGame
-         * @apiGroup Game
+         * @apiGroup Games
          * 
          * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
          *
@@ -173,7 +173,7 @@ const routes = (app) => {
          * @apiDescription      Delete specified game
          * @apiVersion 1.0.0
          * @apiName deleteGame
-         * @apiGroup Game
+         * @apiGroup Games
          * 
          * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
          *

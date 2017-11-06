@@ -23,12 +23,16 @@ exports.up = function(knex, Promise) {
             t.text('description')
             t.specificType('stages', 'jsonb[]')
         })
+
+        .createTable('board_type', () => {
+            
+        })
     
         .createTable('game', (t) => {
             t.increments('id')
             t.text('name')
             t.integer('status')
-            t.integer('player1')
+            t.integer('player1').notNullable()
             t.integer('player2')
             t.timestamp('datecreated').defaultTo(knex.fn.now())
 

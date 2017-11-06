@@ -1,14 +1,16 @@
 
 import restify from 'restify'
-import io from 'socket.io'
 import winston from 'winston'
 
 import { migrateToLatest } from './services/data'
 import routes from './api/routes'
 
+// Statically require these two at runtime so the objects get cached
 const logger = require('./services/logger')
 const knex = require('./services/data')
 
+// Expose the application creator which will automatically
+// migrate the database and return the Restify instance
 export const initializeApplication = async () => {
   winston.info('Application Starting...')
 
@@ -36,16 +38,13 @@ export const initializeApplication = async () => {
     req._knex = knex.default
     return next()
   })
+  
   routes(server)
-
-  const socketEngine = io(server.server)
-  socketEngine.on('connection', () => {
-    winston.silly('User connected')
-  })
 
   return server
 }
 
+// Returns the Restify instance in sync for faster unit testing
 export const basicServer = () => {
   const server = restify.createServer()
 

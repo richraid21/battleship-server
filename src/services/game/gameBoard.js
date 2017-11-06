@@ -45,10 +45,11 @@ class GameBoard {
         
         this.height = config.height || 10
         this.width = config.width || 10
-        this.maxOccupiedNodes = config.maxOccupiedNodes || 17
+        this.maxOccupiedNodes = 0
 
         this._board = {
             hitNodes: {},
+            totalHitNodes: 0,
             maxOccupiedNodes: this.maxOccupiedNodes,
             nodes: {}
         }
@@ -178,6 +179,7 @@ class GameBoard {
             }
 
             this._board.hitNodes[name] = 0
+            this._board.maxOccupiedNodes += length
             return this.getPrivilegedBoardView()
     }
 
@@ -196,9 +198,11 @@ class GameBoard {
         if (node.hasPiece) {
             node.isHit = true
             this._board.hitNodes[node.pieceName]++
+            this._board.totalHitNodes++
+            return location
         }
 
-        return
+        return false
     }
 
     getInstanceData() {

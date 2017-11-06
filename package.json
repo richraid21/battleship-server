@@ -11,8 +11,9 @@
     "pg": "^7.3.0",
     "restify": "^6.0.1",
     "restify-cors-middleware": "^1.0.1",
-    "socket.io": "^2.0.3",
-    "winston": "^2.4.0"
+    "winston": "^2.4.0",
+    "utf-8-validate": "^3.0.4",
+    "ws": "^3.3.0"
   },
   "devDependencies": {
     "apidoc": "^0.17.6",

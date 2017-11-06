@@ -109,6 +109,17 @@ const routes = (app) => {
 
     // Games Collection Routes
     category = 'games'
+
+        /**
+         * @apiDefine GameObject
+         * @apiSuccess {Object} game Game Instance information
+         * @apiSuccess {Number} game.id id of the game
+         * @apiSuccess {String} game.name name of the game
+         * @apiSuccess {Date} game.datecreated The date of the game start
+         * @apiSuccess {String} game.status status of the game
+         * @apiSuccess {Object} game.player1 Player Object
+         * @apiSuccess {Object} game.player2 Player Object
+         */
     
         /**
          * @api {get} /games  Get All Public Games
@@ -119,7 +130,7 @@ const routes = (app) => {
          * 
          * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
          * 
-         * @apiSuccess {Object} stuff The game information.
+         * @apiSuccess {Array} games All the current games
          * 
          * @apiError {String}   message The reason for the failure.
          * 
@@ -138,7 +149,7 @@ const routes = (app) => {
          * 
          * @apiParam {String}   name
          * 
-         * @apiSuccess {Object} stuff The game information.
+         * @apiUse GameObject
          * 
          * @apiError {String}   message The reason for the failure.
          * 
@@ -160,7 +171,7 @@ const routes = (app) => {
          *
          * @apiParam {String} gameid The id of the game
          * 
-         * @apiSuccess {Object} stuff The game information.
+         * @apiUse GameObject
          * 
          * @apiError {String}   message The reason for the failure.
          * 
@@ -179,7 +190,7 @@ const routes = (app) => {
          *
          * @apiParam {String} gameid The id of the game
          * 
-         * @apiSuccess {Object} stuff The game information.
+         * @apiUse GameObject
          * 
          * @apiError {String}   message The reason for the failure.
          * 

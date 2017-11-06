@@ -14,8 +14,8 @@ const gameQuery = `
             g.name,
             g.datecreated,
             gs.name as status,
-            json_build_object('nickname', u1.nickname, 'rank', u1.rank) as player1,
-            json_build_object('nickname', u2.nickname, 'rank', u2.rank) as player2
+            json_build_object('username', u1.nickname, 'rank', u1.rank) as player1,
+            json_build_object('username', u2.nickname, 'rank', u2.rank) as player2
         FROM
             game g
         JOIN

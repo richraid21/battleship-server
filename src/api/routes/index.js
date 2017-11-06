@@ -1,5 +1,25 @@
 import auth from './auth'
 import { game, games } from './games'
+/**
+    @api {OBJECT} /types/player Player
+    @apiGroup Custom types
+    @apiVersion 1.0.0
+    @apiParam {String} username The username of the player
+    @apiParam {Number} rank The player's ELO rank
+ */
+
+/**
+ *  @api {OBJECT} /types/game Game
+    @apiGroup Custom types
+    @apiVersion 1.0.0
+    @apiParam {Object} game Game Instance information
+    @apiParam {Number} game.id id of the game
+    @apiParam {String} game.name name of the game
+    @apiParam {Date} game.datecreated The date of the game start
+    @apiParam {String} game.status status of the game
+    @apiParam {Object} game.player1 Player Object
+    @apiParam {Object} game.player2 Player Object
+ */
 
 // Constants & Setup
 const baseRoute = '/api/'

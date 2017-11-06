@@ -180,6 +180,25 @@ const routes = (app) => {
         app.get(getPath(), game.get)
 
         /**
+         * @api {post} /games/id/join  Join a public Game
+         * @apiDescription      Join a publicly listed game
+         * @apiVersion 1.0.0
+         * @apiName joinGame
+         * @apiGroup Games
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         * 
+         * @apiParam {String} gameid The id of the game
+         * 
+         * @apiUse GameObject
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
+        path = '/:id/join'
+        app.post(getPath(), game.join)
+
+        /**
          * @api {delete} /games/id  Remove Game
          * @apiDescription      Delete specified game
          * @apiVersion 1.0.0

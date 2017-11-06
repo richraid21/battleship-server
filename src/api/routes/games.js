@@ -83,6 +83,10 @@ const getGame = async (req, res) => {
     }
 }
 
+const joinGame = async (req, res) => {
+    res.send(501, { message: 'Not Implemented'})
+}
+
 const removeGame = async (req, res) => {
     res.send(501, { message: 'Not Implemented'})
 }
@@ -96,6 +100,7 @@ export const games = {
 
 export const game = {
     get: requiresAuth(getGame),
+    join: requiresAuth(joinGame),
     remove: requiresAuth(removeGame),
 }
 

@@ -181,7 +181,7 @@ const routes = (app) => {
 
         /**
          * @api {post} /games/id/join  Join a public Game
-         * @apiDescription      Join a publicly listed game
+         * @apiDescription  Join a publicly listed game. On 200 response, you can now connect with the game socket server at /game/id
          * @apiVersion 1.0.0
          * @apiName joinGame
          * @apiGroup Games

@@ -75,6 +75,12 @@ const getGame = async (req, res) => {
         
         const result = await req._knex.raw(singleGameQuery, [gameId])
         const game = result.rows
+
+        if (game.length == 0){
+            res.send(404)
+            return
+        }
+
         res.send(200, game)
         
     } catch (err) {
@@ -84,11 +90,59 @@ const getGame = async (req, res) => {
 }
 
 const joinGame = async (req, res) => {
-    res.send(501, { message: 'Not Implemented'})
+    try {
+        const gameId = req.params.id
+        if (!parseInt(gameId))
+            return malformedError(res, 'Requires a valid integer')
+        
+        
+            const result = await req._knex.raw(singleGameQuery, [gameId])
+            const game = result.rows
+    
+            if (game.length == 0){
+                return res.send(404)
+            }
+            
+            if (req._user.id === game[0].player1.id){
+                return forbiddenError(res, 'You cannot join your own game. You made it!')
+            }
+
+            const join = await req._knex('game').update('player2', req._user.id).where('id', gameId)
+            
+            res.send(200, join)
+        
+    } catch (err) {
+        winston.log('warn', 'deleteGame() failed: ', err.message)
+        genericServerError(res)
+    }
 }
 
 const removeGame = async (req, res) => {
-    res.send(501, { message: 'Not Implemented'})
+    try {
+        const gameId = req.params.id
+        if (!parseInt(gameId))
+            return malformedError(res, 'Requires a valid integer')
+        
+        
+            const result = await req._knex.raw(singleGameQuery, [gameId])
+            const game = result.rows
+    
+            if (game.length == 0){
+                return res.send(404)
+            }
+
+            if (req._user.username !== game[0].player1.username){
+                return unauthorizedError(res, 'You are not allowed to delete this game')
+            }
+
+            const deleteAction = await req._knex('game').del().where('id', gameId)
+            
+            res.send(200, deleteAction)
+        
+    } catch (err) {
+        winston.log('warn', 'deleteGame() failed: ', err.message)
+        genericServerError(res)
+    }
 }
 
 

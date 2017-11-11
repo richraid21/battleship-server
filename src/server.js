@@ -1,6 +1,7 @@
 import winston from 'winston'
 import ws from 'ws'
 import { initializeApplication } from './app'
+import { GameServer } from './services/game'
 
 // ws library doesn't allow wildcards when defining the PATH for connections
 // We override the handler prototype to implement this logic
@@ -23,35 +24,11 @@ ws.Server.prototype.shouldHandle = (req) => {
     return match
 }
 
-class SocketMessage {
-    constructor(){
-        this.type = ''
-        this.message = ''
-        this.payload = {}
-    }
-}
-
 // Startup HTTP server and then attach websocket server
 initializeApplication().then((server) => {
 
-    const wss = new ws.Server({ server });
-
-    wss.on('connection', (socket, req) => {
-        
-        winston.silly('User connected')
-
-        socket.on('game', () => {
-            winston.debug('Game message')
-        })
-
-
-        let msg = new SocketMessage()
-        msg.type = 'AUTH:REQUEST'
-        msg.message = 'Please authenticate'
-        msg.payload = { gameid: req.gameid}
-        
-        socket.send(JSON.stringify(msg))
-    })
+    const wss = new ws.Server({ server })
+    const gameServer = new GameServer(wss)
 
     const app = server.listen(8080, function() {
         winston.info(`Running @ ${server.url}`)

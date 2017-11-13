@@ -16,8 +16,8 @@ Player: Object {
 ### Game 
 ```javascript
 Game: Object {
-    piecesPlaced: Number,
-    piecesSank: Number,
+    piecesPlaced: Number, // Ony shown to Owner
+    piecesSank: Number, // Only shown to Owner
     nodes: NodeArray[][]
 }
 ```

@@ -41,6 +41,16 @@ class GameBoard {
         }
     }
 
+    toJson() {
+        let data = {
+            height: this.height,
+            width: this.width,
+            board: this.board
+        }
+
+        return data
+    }
+
     allPiecesPlaced() {
         return this.piecesPlaced === Object.keys(PIECES).length
     }

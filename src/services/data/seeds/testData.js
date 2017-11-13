@@ -1,5 +1,6 @@
 exports.seed = function(knex, Promise) {
     
+      // Insert Users
       return knex('user').insert([
         {
           id: 1,
@@ -15,6 +16,7 @@ exports.seed = function(knex, Promise) {
         }
       ]).then(() => {
         
+        // Then insert sessions
         const expires = new Date()
         expires.setHours(expires.getHours() + 6)
         
@@ -35,7 +37,35 @@ exports.seed = function(knex, Promise) {
             active: true,
             datecreated: knex.fn.now()
           }
-        ])
+        ]).then(() => {
+
+          // Then insert games
+          return knex('game').insert([
+            {
+              id: 1,
+              datecreated: knex.fn.now(),
+              name: 'Richs Game with Will',
+              status: 'CREATING',
+              player1: 1,
+              player2: 2
+            },
+            {
+              id: 2,
+              datecreated: knex.fn.now(),
+              name: 'Richs Open Game',
+              status: 'CREATING',
+              player1: 1,
+            },
+            {
+              id: 3,
+              datecreated: knex.fn.now(),
+              name: 'Wills game with Rich',
+              status: 'CREATING',
+              player1: 2,
+              player2: 1
+            }
+          ])
+        })
       })
 
     }

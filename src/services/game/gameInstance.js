@@ -24,15 +24,66 @@ class GameInstance {
     constructor(config = {}){
         
         this.gameid = config.gameid || 0
-        this.datecreated = null
 
-        this.currentState = 'CREATING'
-        this.currentPlayer = false
+        this.currentState = config.currentState || 'CREATING'
+        this.currentPlayer = config.currentPlayer || false
         
         this.players = {
             // Structure....
             // 1: { board: new GameBoard(), data: {}, socket: null }
         }
+
+        if (config.players){
+            this.fillExistingPlayers(config)
+        }
+    }
+
+    async persist(){
+        const state = this.toJson()
+        
+        try {
+            const res = await knex('game').update({ state }).where({id: this.gameid})
+            return true
+        } catch (e) {
+            winston.log('warn', 'Could not persist in-memory game: ', e, state)
+            throw new Erro('Could not persist game')
+        }
+        
+    }
+
+    toJson(){
+        let data = {
+            gameid: this.gameid,
+            currentState: this.currentState,
+            currentPlayer: this.currentPlayer,
+            players: {}
+        }
+
+        Object.keys(this.players).forEach((playerNumber) => {
+            const player = this.players[playerNumber]
+            const rep = {
+                board: player.board.toJson(),
+                data: player.data
+            }
+
+            data.players[playerNumber] = rep
+        })
+
+        return data
+    }
+
+    fillExistingPlayers(config = {}){
+        
+        Object.keys(config.players).forEach((playerNumber) => {
+            const player = config.players[playerNumber]
+
+            const playerData = {
+                board: new GameBoard(player.board),
+                data: player.data
+            }
+
+            this.players[playerNumber] = playerData
+        })
     }
 
     transitionState(newState){
@@ -183,6 +234,17 @@ class GameInstance {
             if (player.socket)
                 player.socket.json(data)
         })
+    }
+
+    isPlayerHere(playerNumber){
+
+        const player = this.players[playerNumber]
+        
+        // Is player registered & socket active
+        if (player && player.socket)
+            return true
+
+        return false
     }
 
     addPlayerConnection(playerNumber, socket, data = {}){

@@ -46,7 +46,7 @@ export class GameServer {
         
         this.games = {}
 
-        
+
         this.server.on('connection', (socket, req) => {
             
             socket.json = function(data){
@@ -120,17 +120,17 @@ export class GameServer {
                 }
                 
                 const playerNumber = player.username === result.rows[0].player1.username ? 1 : 2
-                
+                const game = this.games[gameid]
+
                 // If the game isn't in memory, we need to fetch it
                 if (!this.games.hasOwnProperty(gameid)){
-                    this.games[gameid] = new GameInstance({ id: gameid})
+                    
+                    const gameState = await knex('game').first('state').where({ id: gameid})
+                    game = new GameInstance(gameState || { gameid: gameid})
                 }
 
-                
-                const game = this.games[gameid]
-                
-                //If the game is in memory but this is the first time the socket is joining
-                if (!game.players[playerNumber]){
+                // If player is joining the socket...
+                if (!game.isPlayerHere(playerNumber)){
                     game.addPlayerConnection(playerNumber, socket, player)
                 }
 

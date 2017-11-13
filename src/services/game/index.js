@@ -46,6 +46,7 @@ export class GameServer {
         
         this.games = {}
 
+        
         this.server.on('connection', (socket, req) => {
             
             socket.json = function(data){

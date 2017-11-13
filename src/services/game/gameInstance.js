@@ -226,7 +226,7 @@ class GameInstance {
         
         //Transition to completed
         this.transitionState('COMPLETED')
-
+        this.broadcastStateChange('COMPLETED', 'The game has ended!')
         //Broadcast gameover
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner})
 

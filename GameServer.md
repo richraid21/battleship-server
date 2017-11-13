@@ -1,7 +1,7 @@
 # Game Server
 
 The Game server runs on a socket server located on the same port as the API server.    
-The url is `/game/:gameid`   
+The url is `/game/:gameid`
 
 ## Client Instructions
 
@@ -75,6 +75,9 @@ payload: Object {
 
 #### type `GAME:PIECES:ACCEPT` - Individual
 Sent when the placement of pieces has been accepted
+```javascript
+payload: Board
+```
 
 #### type `GAME:PIECES:REJECT` - Individual
 Sent when placement is rejected

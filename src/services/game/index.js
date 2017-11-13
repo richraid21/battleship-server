@@ -158,8 +158,10 @@ export class GameServer {
 
                     delete this.games[gameid]
                 }
-                
 
+                // Persisting after every authenticated message should be fine?
+                // TODO: think about persisting...
+                game.persist()
             })
         })
     }

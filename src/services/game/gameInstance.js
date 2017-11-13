@@ -46,7 +46,7 @@ class GameInstance {
             return true
         } catch (e) {
             winston.log('warn', 'Could not persist in-memory game: ', e, state)
-            throw new Erro('Could not persist game')
+            throw new Error('Could not persist game')
         }
         
     }
@@ -210,24 +210,39 @@ class GameInstance {
         }
         
         //If player x lost, then player y won
+        let winner, loser
         if (player1Lost){
-            event.action.winner = this.players[2].data
+            winner = 2
+            loser = 1
         }
         
         if (player2Lost){
-            event.action.winner = this.players[1].data
+            winner = 1
+            loser = 2
         }
+
+        event.action.winner = this.players[winner].data
+        event.action.loser = this.players[loser].data
 
         //Log game over
         knex('game_action').insert(event).catch((e) => {
             winston.log('warn', 'Unable to log game_over event', event.action, e)
+        })
+
+        // Insert result
+        knex('game_result').insert({gameid: this.gameid, winner: event.action.winner.id, loser: event.action.loser.id}).catch((e) => {
+            winston.log('warn', 'Unable to insert game_result', event.action, e)
+        })
+
+        // Update game status
+        knex('game').update({status: 'COMPLETED'}).where({id: this.gameid}).catch((e) => {
+            winston.log('warn', 'Unable to update game to completed', event.action, e)
         })
         
         
         //Transition to completed
         this.transitionState('COMPLETED')
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
-        //Broadcast gameover
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner})
 
         return true
@@ -276,6 +291,7 @@ class GameInstance {
                 //Switch Turns if game isnt over
                 if (!this.isGameOver())
                     nextPlayer()
+            
             } catch (e) {
                 this.messageToPlayer(playerNumber, 'GAME:GUESS:REJECT', e.message)
             }

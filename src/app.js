@@ -19,8 +19,8 @@ export const initializeApplication = async () => {
   const server = restify.createServer()
   server.use(restify.plugins.bodyParser())
 
-  if (process.env.NODE_ENV='dev'){
-    winston.warn('dev-mode detected. Enables CORS(*). Disable in production')
+  if (process.env.NODE_ENV === 'dev'){
+    winston.warn('Dev-mode detected. Enables CORS(*). Disable in production')
     const corsMiddleware = require('restify-cors-middleware')
     
     const cors = corsMiddleware({

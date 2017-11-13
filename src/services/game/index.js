@@ -92,11 +92,18 @@ export class GameServer {
 
             socket.on('message', async (data) => {
                 const message = JSON.parse(data)
-                const gameid = req.gameid
+                
+                if (!message.type || !VALID_CLIENT_MESSAGE_TYPES.includes(message.type)){
+                    socket.json({type: 'MESSAGE:REJECT', message: 'Message must include a .type identifier'})
+                    socket.terminate()
+                    return
+                }
+                
+                
                 // Authenticate User
 
                 if (!message.token){
-                    socket.json({type: 'ERROR', message: 'You must provide access token'})
+                    socket.json({type: 'AUTH:REJECT', message: 'You must provide access token'})
                     socket.terminate()
                     return
                 }
@@ -109,6 +116,7 @@ export class GameServer {
                     return
                 }
 
+                const gameid = req.gameid
                 const player = buildUserObjectFromSession(session)
                 
                 const result = await knex.raw(singleGameQueryWithPlayer, [gameid, player.id, player.id])
@@ -142,6 +150,9 @@ export class GameServer {
 
                 // Process Command
                 switch(message.type){
+                    case 'AUTH:ATTEMPT':
+                        socket.json({type: 'AUTH:ACCEPT', message: 'Ok'});
+                        return;
                     case 'GAME:PIECES:ATTEMPT':
                         game.setupPieces(playerNumber, message.payload)
                         break;

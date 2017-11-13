@@ -125,7 +125,10 @@ class GameInstance {
 
     setCurrentPlayer(playerNumber){
         this.currentPlayer = playerNumber
-        this.broadcastMessage('GAME:PLAYER:TURN', `It is player ${playerNumber} turn`, { player: playerNumber })
+        this.broadcastMessage(
+            'GAME:PLAYER:TURN', 
+            `It is player ${playerNumber} turn`, 
+            { player: this.players[playerNumber].data })
     }
 
     nextPlayer(){
@@ -243,7 +246,7 @@ class GameInstance {
         //Transition to completed
         this.transitionState('COMPLETED')
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
-        this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner})
+        this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner, loser: event.action.loser})
 
         return true
 

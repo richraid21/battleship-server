@@ -62,11 +62,26 @@ export class GameServer {
                 
                 if (game){
                     let player = {}
+                    
                     game.allPlayers().forEach((player) => {
                         if (player.socket.id == socket.id){
                             player.socket = null
                             player = player.data
                         }
+                    })
+
+                    const event = {
+                        gameid: req.gameid,
+                        datecreated: knex.fn.now(),
+                        action: {
+                            gameid: req.gameid,
+                            type: 'PLAYER_LEFT',
+                            player: player
+                        }
+                    }
+            
+                    knex('game_action').insert(event).catch((e) => {
+                        winston.log('warn', 'Unable to log action', event.action, e)
                     })
                         
                     game.broadcastMessage('GAME:PLAYER:LEAVE', 'User left', player)
@@ -107,14 +122,14 @@ export class GameServer {
                 
                 // If the game isn't in memory, we need to fetch it
                 if (!this.games.hasOwnProperty(gameid)){
-                    this.games[gameid] = new GameInstance()
+                    this.games[gameid] = new GameInstance({ id: gameid})
                 }
 
                 
                 const game = this.games[gameid]
                 
                 //If the game is in memory but this is the first time the socket is joining
-                if (!game.players[playerNumber].socket){
+                if (!game.players[playerNumber]){
                     game.addPlayerConnection(playerNumber, socket, player)
                 }
 

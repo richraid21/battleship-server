@@ -13,13 +13,11 @@ export const gameQuery = `
             g.id,
             g.name,
             g.datecreated,
-            gs.name as status,
+            g.status,
             json_build_object('username', u1.nickname, 'rank', u1.rank) as player1,
             json_build_object('username', u2.nickname, 'rank', u2.rank) as player2
         FROM
             game g
-        JOIN
-            game_status gs ON g.status = gs.id
         JOIN
             "user" u1 ON g.player1 = u1.id
         LEFT OUTER JOIN
@@ -57,7 +55,7 @@ const createGame = async (req, res) => {
     try {
         const data = {
             name,
-            status: 1,
+            status: 'CREATING',
             player1: req._user.id
         }
         const [game] = await req._knex('game').insert(data).returning('*')
@@ -85,6 +83,10 @@ const getGame = async (req, res) => {
             return
         }
 
+        const stateHistory = await req._knex('game_action').select().where({ gameid: game[0].id}).orderBy('datecreated')
+        if (stateHistory)
+            game[0].history = stateHistory
+
         res.send(200, game)
         
     } catch (err) {
@@ -102,7 +104,7 @@ const joinGame = async (req, res) => {
         
             const result = await req._knex.raw(singleGameQuery, [gameId])
             const game = result.rows
-    
+
             if (game.length == 0){
                 return res.send(404)
             }
@@ -111,12 +113,22 @@ const joinGame = async (req, res) => {
                 return forbiddenError(res, 'You cannot join your own game. You made it!')
             }
 
+            
+            if (game[0].player2){
+                return forbiddenError(res, 'This game already has two players. Sorry!')
+            }
+
             const join = await req._knex('game').update('player2', req._user.id).where('id', gameId)
             
-            res.send(200, join)
+            if (join == 1){
+                return res.send(200, { message: 'Joined!'})
+            } else {
+                return genericServerError(res)
+            }
+            
         
     } catch (err) {
-        winston.log('warn', 'deleteGame() failed: ', err.message)
+        winston.log('warn', 'joinGame() failed: ', err)
         genericServerError(res)
     }
 }
@@ -144,7 +156,7 @@ const removeGame = async (req, res) => {
             res.send(200, deleteAction)
         
     } catch (err) {
-        winston.log('warn', 'deleteGame() failed: ', err.message)
+        winston.log('warn', 'deleteGame() failed: ', err)
         genericServerError(res)
     }
 }

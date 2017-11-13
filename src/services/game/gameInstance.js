@@ -1,4 +1,6 @@
 const GameBoard = require('./GameBoard')
+const knex = require('../data').default
+const winston = require('winston')
 
 const VALID_GAME_STATES = {
     'CREATING': {
@@ -21,7 +23,7 @@ const VALID_GAME_STATES = {
 class GameInstance {
     constructor(config = {}){
         
-        this.id = 0
+        this.gameid = config.gameid || 0
         this.datecreated = null
 
         this.currentState = 'CREATING'
@@ -36,6 +38,26 @@ class GameInstance {
     transitionState(newState){
         if ( newState in VALID_GAME_STATES){
             this.currentState = newState
+
+            knex('game').update({ status: newState}).where({ gameid: this.gameid})
+                .catch((e) => {
+                    winston.log('warn', 'Unable to transition state', { gameid: this.gameid, state: newState}, e)
+                })
+
+            const event = { 
+                gameid: this.gameid, 
+                datecreated: knex.fn.now(), 
+                action: {
+                    gameid: this.gameid,
+                    type: 'STATE_CHANGE',
+                    state: newState
+                }
+            }
+            
+            knex('game_action').insert(event).catch((e) => {
+                winston.log('warn', 'Unable to log state transition', event.action, e)
+            })
+
             return newState
         } 
         
@@ -76,6 +98,22 @@ class GameInstance {
             try{
 
                 const board = player.board.placeShips(pieceSet)
+                
+                const event = {
+                    gameid: this.gameid, 
+                    datecreated: knex.fn.now(),
+                    action: {
+                        gameid: this.gameid,
+                        type: 'PIECES_PLACED',
+                        player: player.data,
+                        pieces: pieceSet
+                    }
+                }
+
+                knex('game_action').insert(event).catch((e) => {
+                    winston.log('warn', 'Unable to log action', event.action, e)
+                })
+
                 player.socket.json({ type: 'GAME:PIECES:ACCEPT', payload: board})
 
             } catch(e) {
@@ -156,6 +194,20 @@ class GameInstance {
 
         this.players[playerNumber] = player
         this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, player.data)
+        
+        const event = {
+            gameid: this.gameid,
+            datecreated: knex.fn.now(),
+            action: {
+                gameid: this.gameid,
+                type: 'PLAYER_JOIN',
+                player: player.data
+            }
+        }
+
+        knex('game_action').insert(event).catch((err) => {
+            winston.log('warn', 'Unable to log action', event.action, e)
+        })
 
         if (this.players[1] && this.players[2]){
             this.transitionState('SETUP')

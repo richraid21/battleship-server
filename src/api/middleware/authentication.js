@@ -3,7 +3,6 @@ import _ from 'lodash'
 import winston from 'winston'
 
 export const retrieveUserFromSession = async (knex, token) => {
-    console.log(token)
     try {
         const session = await knex('session')
                                 .first()

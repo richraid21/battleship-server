@@ -3,6 +3,39 @@
 The Game server runs on a socket server located on the same port as the API server.    
 The url is `/game/:gameid`
 
+## Types
+
+### Player
+```javascript
+Player: Object {
+    username: String,
+    rank: Number
+}
+```
+
+### Game 
+```javascript
+Game: Object {
+    piecesPlaced: Number,
+    piecesSank: Number,
+    nodes: NodeArray[][]
+}
+```
+
+### GameNode
+Depending on what board you are looking at, the structure will contain everything listed here, or just a subset. (You obviously can't see the opponents information if you havent gussed the node yet)
+```javascript
+// SHOWN TO                 Owner   Opponent (reason)
+Node: Object {
+    x: Number, //           YES     YES
+    y: Number, //           YES     YES 
+    name: String, //        YES     Only when sank = true
+    guessed: Boolean, //    YES     YES
+    hit: Boolean, //        YES     Only when guessed = true
+    sank: Boolean //        YES     Only all nodes with name has hit = true
+}
+```
+
 ## Client Instructions
 
 All client messages to the game server should follow the same object structure. Remember to stringify the object before sending over the pipe. Only UTF-8 is supported.

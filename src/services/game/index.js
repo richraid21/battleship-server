@@ -118,6 +118,12 @@ export class GameServer {
                     socket.terminate()
                     return
                 }
+
+                if (result.rows[0].status === 'COMPLETED'){
+                    socket.json({type: 'AUTH:REJECT', message: 'This game is completed!'})
+                    socket.terminate()
+                    return
+                }
                 
                 const playerNumber = player.username === result.rows[0].player1.username ? 1 : 2
                 const game = this.games[gameid]

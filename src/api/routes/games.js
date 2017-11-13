@@ -8,7 +8,7 @@ import { malformedError,
         unauthorizedError,
         genericServerError } from '../utils/terminate'
 
-const gameQuery = `
+export const gameQuery = `
         SELECT
             g.id,
             g.name,
@@ -26,9 +26,13 @@ const gameQuery = `
             "user" u2 ON g.player2 = u2.id
     `
 
-const singleGameQuery = gameQuery + `
+export const singleGameQuery = gameQuery + `
         WHERE
             g.id = ?
+`
+
+export const singleGameQueryWithPlayer = singleGameQuery + `
+        AND (g.player1 = ? OR g.player2 = ?)
 `
 
 const getGames = async (req, res) => {

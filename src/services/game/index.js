@@ -5,27 +5,31 @@
  * 
  * All socket messages are stringified JSON objects with the structure: 
  *  SocketMessage : {
+ *      token: String,
  *      type: String {NOUN:[NOUN:]:VERB},
  *      message: String,
  *      payload: Object
  *  }
  */
 
-const GameInstance = require('./gameInstance')
-const GameEventService = require('./gameEventService')
+import { retrieveUserFromSession, buildUserObjectFromSession } from '../../api/middleware/authentication'
+import GameInstance from './GameInstance'
+import { singleGameQueryWithPlayer } from '../../api/routes/games'
+const knex = require('../../services/data').default
 
 
  const VALID_CLIENT_MESSAGE_TYPES = [
     'AUTH:ATTEMPT',
     'GAME:PIECES:ATTEMPT',
-    'GAME:GUESS:ATTEMPT',
-    'GAME:FORFEIT:ATTEMPT'
+    'GAME:GUESS:ATTEMPT'
  ]
 
  const VALID_SERVER_MESSAGE_TYPES = [
      'AUTH:ACCEPT',
+     'AUTH:REJECT',
      'GAME:PLAYER:JOIN',
      'GAME:PLAYER:LEAVE',
+     'GAME:PLAYER:TURN',
      'GAME:STATE',
      'GAME:PIECES:REJECT',
      'GAME:PIECES:ACCEPT',
@@ -33,15 +37,6 @@ const GameEventService = require('./gameEventService')
      'GAME:GUESS:REJECT',
      'GAME:OVER'
  ]
-
- 
-class SocketMessage {
-    constructor(){
-        this.type = ''
-        this.message = ''
-        this.payload = {}
-    }
-}
 
 export class GameServer {
     
@@ -65,102 +60,77 @@ export class GameServer {
             socket.on('close', () => {
                 const game = this.games[req.gameid]
                 
-                if (game.player1.id == socket.id){
-                    delete game.player1
-                } else {
-                    delete game.player2
+                if (game){
+                    let player = {}
+                    game.allPlayers().forEach((player) => {
+                        if (player.socket.id == socket.id){
+                            player.socket = null
+                            player = player.data
+                        }
+                    })
+                        
+                    game.broadcastMessage('GAME:PLAYER:LEAVE', 'User left', player)
                 }
-                    
-                this.message(game, 'GAME:PLAYER:LEAVE', 'Player left', socket.player)
+
             })
 
-            socket.on('message', (data) => {
-                
-                // Authenticate User
-                socket.player = {
-                    username: 'Rich',
-                    rank: 1200
-                }
-                // Ensure the access key provided is linked to a player in the game with the id
-                // Determine whether the incoming player is player 1 or 2
-                const playerNumber = data
-
-                // Retrieve game from database if not in memory
+            socket.on('message', async (data) => {
+                const message = JSON.parse(data)
                 const gameid = req.gameid
-                if (!this.games.hasOwnProperty(gameid)){
-                    this.games[gameid] = {
-                        instance: new GameInstance(new GameEventService()),
-                    }
+                // Authenticate User
+
+                if (!message.token){
+                    socket.json({type: 'ERROR', message: 'You must provide access token'})
+                    socket.terminate()
+                    return
                 }
 
-                //Assign the socket into the game
-                this.games[gameid][`player${playerNumber}`] = socket
+                const session = await retrieveUserFromSession(knex, message.token)
+
+                if (!session){
+                    socket.json({type: 'AUTH:REJECT', message: 'Invalid Auth token. Please reauthenticate'})
+                    socket.terminate()
+                    return
+                }
+
+                const player = buildUserObjectFromSession(session)
+                
+                const result = await knex.raw(singleGameQueryWithPlayer, [gameid, player.id, player.id])
+                
+                if (result.rows.length == 0){
+                    socket.json({type: 'AUTH:REJECT', message: 'You are not part of this game!'})
+                    socket.terminate()
+                    return
+                }
+                
+                const playerNumber = player.username === result.rows[0].player1.username ? 1 : 2
+                
+                // If the game isn't in memory, we need to fetch it
+                if (!this.games.hasOwnProperty(gameid)){
+                    this.games[gameid] = new GameInstance()
+                }
+
+                
                 const game = this.games[gameid]
                 
-                //Broadcast a player has joined
-                this.message(game, 'GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, socket.player)
-                
-                //If both players are now present, transition the game state
-                
-                if (game.player1 && game.player2){
-                    
-                    this.state(game, 'SETUP', 'Setup your pieces...')
-                
-                } else {
-                    
-                    this.state(game, 'WAITING', 'Waiting for all players to join')
-
+                //If the game is in memory but this is the first time the socket is joining
+                if (!game.players[playerNumber].socket){
+                    game.addPlayerConnection(playerNumber, socket, player)
                 }
 
-
-
                 // Process Command
+                switch(message.type){
+                    case 'GAME:PIECES:ATTEMPT':
+                        game.setupPieces(playerNumber, message.payload)
+                        break;
+                    case 'GAME:GUESS:ATTEMPT':
+                        break;
+                }
                 
-                const message = JSON.stringify(data)
 
             })
         })
     }
-
-    state(game, state, message = ''){
-        this.broadcast(game, {
-            type: 'GAME:STATE',
-            message,
-            payload: {
-                state
-            }
-        })
-    }
-
-    message(game, type, message, payload = {}){
-        this.broadcast(game, {
-            type: type,
-            message,
-            payload: payload
-        })
-    }
-
-    broadcast(game, data){
-        if (game.player1)
-            game.player1.json(data)
-        
-        if (game.player2)
-            game.player2.json(data)
-    }
-
-    placePieces(message) {
-        console.log(message)
-    }
-
-    gameGuess(message) {
-
-    }
-
-    gameForfeit(message) {
-
-    }
-
-
 }
 
 

@@ -1,101 +1,171 @@
-const GameBoard = require('./gameBoard')
+const GameBoard = require('./GameBoard')
+
+const VALID_GAME_STATES = {
+    'CREATING': {
+        description: 'Creating'
+    },
+    'WAITING': {
+        description: 'Waiting'
+    },
+    'SETUP': {
+        description: 'Setup'
+    },
+    'INPROGRESS': {
+        description: 'In-Progress'
+    },
+    'COMPLETED': {
+        description: 'Completed'
+    }
+}
 
 class GameInstance {
-    constructor(gameService, config = {}){
-        if (!gameService)
-            throw new Error('Must provide Game Service')
+    constructor(config = {}){
         
-        this._gameid = 0
-        this._datecreated = null
+        this.id = 0
+        this.datecreated = null
 
-        this._activePlayer = 0
-        this._activePlayerHistory = []
-        this._ges = gameService
+        this.currentState = 'CREATING'
+        this.currentPlayer = false
         
-        this._player1 = {
-            board: new GameBoard(config)
-        }
-        this._player2 = {
-            board: new GameBoard(config)
+        this.players = {
+            // Structure....
+            // 1: { board: new GameBoard(), data: {}, socket: null }
         }
     }
 
-    player1() {
-        this._activePlayerHistory.push(this._activePlayer)
-        this._activePlayer = 1
+    transitionState(newState){
+        if ( newState in VALID_GAME_STATES){
+            this.currentState = newState
+            return newState
+        } 
         
-        return this
+        throw new Error('Invalid game state')
     }
 
-    player2() {
-        this._activePlayerHistory.push(this._activePlayer)
-        this._activePlayer = 2
+    isState(desiredState){
+        return (this.currentState === desiredState)
+    }
+
+    isPlayerTurn(playerNumber){
+        return (this.currentPlayer === playerNumber)
+    }
+
+    nextPlayer(){
+        if (this.currentPlayer){
+            const next = this.currentPlayer === 1 ? 2 : 1
+            this.currentPlayer = next
+
+            return next
+        }
+
+        throw new Error('Cannot move to next player without current player')
+    }
+    
+    allPiecesPlaced() {
+        const player1Ready = this.players[1].board.allPiecesPlaced()
+        const player2Ready = this.players[2].board.allPiecesPlaced()
+
+        return player1Ready && player2Ready
+    }
+
+    setupPieces(playerNumber, pieceSet){
         
-        return this
-    }
+        // The game must be in SETUP mode to place pieces
+        if (isState('SETUP')){
+            const player = this.players[playerNumber]
+            try{
 
-    _requireActivePlayer() {
-        if (this._activePlayer !== 1 && this._activePlayer !== 2)
-            throw new Error('Must chain player selection to command')
-    }
+                const board = player.board.placeShips(pieceSet)
+                player.socket.json({ type: 'GAME:PIECES:ACCEPT', payload: board})
 
-    _requireNewActivePlayer() {
-        if (this._activePlayer === this._activePlayerHistory.slice(-1)[0])
-            throw new Error('One player cannot take this action consecutively')
-    }
+            } catch(e) {
+                
+                player.socket.json({ type: 'GAME:PIECES:REJECT', message: e.message})
 
-    _requireGameState(state) {
-        return true
-    }
+            }
 
-    _checkGameState() {
-        const tg = this._targetBoard()
-        const maximumHits = tg._board.maxOccupiedNodes
-        const totalHits = tg._board.totalHitNodes
-        console.log(totalHits, maximumHits)
-        
-        if (totalHits >= maximumHits)
-            this._ges.emit('GAME:OVER', { winner: this._activePlayer })
+            // If both players have successfully placed all their pieces, we can transition to In-Progress
+            if (allPiecesPlaced){
+                this.transitionState('IN-PROGRESS')
+                this.broadcastStateChange('IN-PROGRESS', 'Game can now begin!')
+                this.broadcastMessage('GAME:PLAYER:TURN', 'It is player 1s turn', { player: 1 })
+            }
 
-        return
-    }
-
-    _targetPlayer() {
-        return this._activePlayer == 1 ? 2 : 1
-    }
-
-    _board() {
-        return this[`_player${this._activePlayer}`].board
-    }
-
-    _targetBoard() {
-        return this[`_player${this._targetPlayer()}`].board
-    }
-
-    guess(location) {
-        this._requireActivePlayer()
-        this._requireNewActivePlayer()
-        this._requireGameState('INPROGRESS')
-
-        const hitNode = this._targetBoard().guessLocation(location)
-        if (hitNode){
-            this._ges.emit('GUESS:HIT', hitNode)
+            return true
         } else {
-            this._ges.emit('GUESS:MISS', hitNode)
+            player.socket.json({ type: 'GAME:PIECES:REJECT', message: 'Can only place pieces when game is in SETUP mode'})
+            return false
         }
-            
 
-        this._checkGameState()
-        return this
     }
 
-    placePiece(name, location) {
-        this._requireActivePlayer()
+    isGameOver(){
         
-        this._board().placePieceOnBoard(name, location)
-
-        return this
     }
+
+    guessLocation(playerNumber, location){
+        if (isPlayerTurn(playerNumber)){
+
+            nextPlayer()
+            return true
+        }
+
+        throw new Error('Not your turn')
+    }
+
+    broadcastStateChange(state, message = ''){
+        this.broadcast({
+            type: 'GAME:STATE',
+            message,
+            payload: {
+                state
+            }
+        })
+    }
+
+    broadcastMessage(type, message, payload = {}){
+        this.broadcast({
+            type: type,
+            message,
+            payload: payload
+        })
+    }
+
+    allPlayers(){
+        let players = []
+        Object.keys(this.players).forEach((number) => {
+            players.push(this.players[number])
+        })
+
+        return players
+    }
+
+    broadcast(data){
+        this.allPlayers().forEach((player) => {
+            if (player.socket)
+                player.socket.json(data)
+        })
+    }
+
+    addPlayerConnection(playerNumber, socket, data = {}){
+        const player = {
+            board: new GameBoard(),
+            data: data,
+            socket: socket
+        }
+
+        this.players[playerNumber] = player
+        this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, player.data)
+
+        if (this.players[1] && this.players[2]){
+            this.transitionState('SETUP')
+            this.broadcastStateChange('SETUP', 'Setup your pieces!')
+        } else {
+            this.transitionState('WAITING')
+            this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
+        }
+    }
+
 }
 
 module.exports = GameInstance

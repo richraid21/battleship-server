@@ -1,6 +1,7 @@
 
 //import _ from 'lodash'
 const _ = require('lodash')
+const winston = require('winston')
 
 const PIECES = {
     'CARRIER': { description: 'Aircraft Carrier', length: 5 },
@@ -10,204 +11,252 @@ const PIECES = {
     'DESTROYER': { description: 'Destroyer', length: 2 }
 }
 
-const _generateEmptyNode = () => {
-    const node = {
-        hasPiece: false,
-        isGuessed: false,
-        isHit: false,
-        pieceName: '',
-        pieceDescription: ''
+const node = (name = '', x, y) => {
+    const n = {
+        x: x, 
+        y: y,
+        name: name,
+        guessed: false,
+        hit: false,
+        sank: false
     }
 
-    return _.assign({}, node)
-}
-
-const _generateEmptyNodes = (container, options) => {
-
-    const height = options.height
-    const width = options.width
-
-    for (let h=0; h < height; h++) {
-        for (let w=0; w < width; w++) {
-            container[`${w}${h}`] = _generateEmptyNode()
-        }
-    }
-}
-
-const generateGameBoardInstanceFromData = (data) => {
-    const gb = new GameBoard(data)
-    return gb
+    return _.assign({}, n)
 }
 
 class GameBoard {
 
     constructor(config = {}){
         
-        this.height = config.height || 10
-        this.width = config.width || 10
-        this.maxOccupiedNodes = 0
+        this.height = 10
+        this.width = 10
 
-        this._board = {
-            hitNodes: {},
-            totalHitNodes: 0,
-            maxOccupiedNodes: this.maxOccupiedNodes,
-            nodes: {}
+        this.board = {
+            piecesPlaced: 0,
+            nodes: new Array(this.width)
         }
 
-        if (config._board){
-            this._board = config._board
-        } else {
-            _generateEmptyNodes(this._board.nodes, { height: this.height, width: this.width } )
+        for (let i=0; i< this.width;i++){
+            this.board.nodes[i] = new Array(this.height).fill({ guessed: false })
         }
     }
 
-    getRestrictedBoardView() {
-        let view = {
-            hitNodes: this._board.hitNodes,
-            maxOccupiedNodes: this._board.maxOccupiedNodes,
-            nodes: {}
-        }
-        
-        Object.keys(this._board.nodes).map((key) => {
-            const node = this._board.nodes[key]
-            
-            view.nodes[key] = { isGuessed: node.isGuessed }
-            
-            // Only display the hitStatus if they have made a guess
-            if (node.isGuessed)
-                view.nodes[key].isHit = true
+    allPiecesPlaced() {
+        return this.piecesPlaced === Object.keys(PIECES).length
+    }
 
+    placeShips(ships) {
+        // Array of { name: String, points: Array[Object{ x: number, y: number}...]}
+        let currentShip = 0
+
+        try {
+            ships.forEach((ship, i) => {
+                currentShip = i
+                this.placePiece(ship.name, ship.points)
+            })
+
+            return this.view()
+        } catch (e){
+            throw new Error(`Invalid Placement of ${ships[currentShip].name}! ${e.message}`)
+        }
+    }
+
+    placePiece(name, points) {
+        
+        // Must be a valid piece in the list of accepted keys
+        if (!PIECES.hasOwnProperty(name))
+            throw new Error('Invalid Piece Name')
+
+        // The number of x,y points must be the same as the length of the ship piece
+        const ship = PIECES[name]
+        if (!points.length === ship.length)
+            throw new Error('Invalid number of points for specified ship')
+
+        //Ensure the piece is vertical or horizontal
+        const xvalues = _(points).map('x').value()
+        const yvalues = _(points).map('y').value()
+
+        const isVertical = xvalues.every(x => x === points[0].x)
+        const isHorizontal = yvalues.every(y => y === points[0].y)
+
+        if (!((isHorizontal && !isVertical) || (!isHorizontal && isVertical))){
+            throw new Error('Must be horizontal or vertical')
+        }
+
+        // Check to make sure a piece doesnt already exist at one of the x,y pair locations
+        points.forEach((p) => {
+            if (this.board.nodes[p.x][p.y].name)
+                throw new Error('Piece already exists at that location')
+        });
+
+        // Ensure placement is sequential
+        let isSequential
+        if (isHorizontal)
+            isSequential = xvalues.every((x, i) => i === xvalues.length - 1 || (x < xvalues[i - 1] || x < xvalues[i + 1]))
+        if (isVertical)
+            isSequential = yvalues.every((y, i) => i === yvalues.length - 1 || (y < yvalues[i - 1] || y < yvalues[i + 1]))
+
+        if (!isSequential){
+            throw new Error('Piece must be laid out sequentially')
+        }
+
+        // Generate the nodes for the piece
+        points.forEach((p) => {
+            this.board.nodes[p.x][p.y] = node(name, p.x, p.y)
         })
+
+        // Return the board object
+        this.piecesPlaced++
+        return this.view()
         
-        
-        return view
-    }
-
-    getPrivilegedBoardView() {
-        return this._board
-    }
-
-    getBoardRep(viewLevel = 0){
-        let board = {}
-
-        switch(viewLevel){
-            case 0:
-                board = this._getRestrictedBoardView()
-                break;
-            case 1:
-                board = this._getPrivilegedBoardView()
-                break;
-        }
-
-
-        return _.assign({}, board)
-    }
-
-    printAscii() {
-        const char = {
-            ship: ' O ',
-            hit: ' X ',
-            top: ' - ',
-            side: '|'
-        }
-
-        let x = 0
-        let y = 0
-
-        let top = new Array(this.width)
-        _.fill(top, char.top)
-        
-        console.log('Battleship Board')
-        console.log(top.join(''))
-        for(y;y<this.height;y++){
-            let row = char.side
-            for(x;x<this.width;x++){
-                const node = this._board.nodes[`${x}${y}`]
-                if (node.hasPiece){
-                    if (node.isHit) {
-                        row += char.hit
-                    } else {
-                        row += char.ship
-                    }
-                } else { 
-                    row += '   '
-                }
-                    
-            }
-            x = 0
-            row += char.side
-            console.log(row)
-        }
-
-        console.log(top.join(''))
-    }
-
-    placePieceOnBoard(name, location) {
-        const {length, description} = PIECES[name]
-
-            const direction = location.d
-            const x = location.x
-            let y = location.y
-
-            for (let l = length; l > 0; l--) {
-                let offset = { x: 0, y: 0}
-                
-                switch(direction){
-                    case 'S':
-                        offset.y = l; break;
-                    case 'N':
-                        offset.y = -l; break;   
-                    case 'E':
-                        offset.x = l; break;
-                    case 'W':
-                        offset.x = -l; break;
-                }
-                
-                const nodex = x + offset.x
-                const nodey = y + offset.y
-
-                let n = this._board.nodes[`${nodex}${nodey}`]
-                
-                if (!n || n.hasPiece) {
-                    throw new Error('Invalid Move!')
-                    return
-                }
-
-                n.hasPiece = true
-                n.pieceName = name
-                n.pieceDescription = description
-            }
-
-            this._board.hitNodes[name] = 0
-            this._board.maxOccupiedNodes += length
-            return this.getPrivilegedBoardView()
     }
 
     guessLocation(location) {
-        const {x, y} = location
-        const node = this._board.nodes[`${x}${y}`]
-
-        if (!node) {
-            throw new Error('Not a valid guess!')
-        }
-        if (node.isGuessed) {
-            throw new Error('Already guessed!')
-        }
-
-        node.isGuessed = true
-        if (node.hasPiece) {
-            node.isHit = true
-            this._board.hitNodes[node.pieceName]++
-            this._board.totalHitNodes++
-            return location
+        const n = this.board.nodes[location.x][location.y]
+        
+        if (!n){
+            n = {
+                guessed: true
+            }
+            return
         }
 
-        return false
+        if (n.guessed){
+            throw new Error('You already guessed that!')
+        }
+
+        console.log('Hit')
+        n.hit = true
+        n.guessed = true
+
+        const hitCount = this.getHitNodesByShipName(n.name).length
+        if (hitCount === PIECES[n.name].length){
+            console.log('SUNK!')
+            this.markShipSank(n.name)
+        } else {
+            console.log('Keep trying....')
+        }
     }
 
-    getInstanceData() {
-        return JSON.stringify(this)
+    markShipSank(name) {
+        const nodes = this.getHitNodesByShipName(name)
+        nodes.forEach(n => n.sank = true)
     }
+
+    getHitNodesByShipName(name) {
+        const shipNodes = this.getNodesByShipName(name)
+        return _.filter(shipNodes, { hit: true})
+    }
+
+    getNodesByShipName(name) {
+        let results = []
+        
+        this.board.nodes.forEach(row => {
+            const matches = _.filter(row, {name: name})
+            if (matches.length > 0){
+                results.push(matches)
+            }
+        })
+
+        return [].concat(...results)
+    }
+    
+    view() {
+        return _.assign({}, this.board)
+    }
+
+    restrictedView() {
+        return this.view()   
+    }
+
+    pickNodes(allNodes, checkFunction){
+        let nodes = []
+
+        for (let x = 0; x<allNodes.length; x++){
+            for (let y = 0; y<allNodes.length; y++){
+                const n = allNodes[x][y]
+                if (checkFunction(n))
+                    nodes.push(n)
+            }
+        }
+
+        return nodes
+    }
+
+
+
+    activeNodes() {
+        return this.pickNodes(this.board.nodes, (n) => {
+            if (n)
+                return true
+        })
+    }
+
+    transformNodesToRestricted(nodes) {
+        for (let y = 0; y<nodes[0].length; y++){
+            for (let x = 0; x<nodes.length; x++){
+                const node = nodes[x][y]
+
+            }
+        }
+
+        return nodes
+    }
+
+    asciiPrint(options = {}) {
+        const restricted = options.restricted || false
+        
+        let nodes = this.board.nodes
+
+        if (restricted){
+            nodes = this.transformNodesToRestricted(nodes)
+        }
+
+        return this.ascii(nodes)
+    }    
+
+    ascii(allNodes) {
+        let ascii = ''
+
+        for (let y = 0; y<allNodes[0].length; y++){
+            for (let x = 0; x<allNodes.length; x++){
+                const n = allNodes[x][y]
+                if (n.name){
+                    let char
+                        char = ' O '
+                        if (n.hit)
+                            char = ' X '
+                        if (n.sank)
+                            char = ' S '
+                        
+                        ascii += char
+                } else {
+                    ascii += ' . '
+                }
+
+                ascii
+            }
+
+            ascii += '\n'
+        }
+
+        return ascii
+    }
+
 }
 
 module.exports = GameBoard
+
+/*
+const g = new GameBoard()
+
+g.placeShips([
+    {name: 'DESTROYER', points: [{ x: 1, y: 2}, { x: 1, y:3}]},
+    {name: 'SUBMARINE', points: [{ x: 2, y: 9}, { x: 3, y:9}, { x: 4, y:9}]}
+])
+
+g.guessLocation({ x: 4, y: 9})
+g.guessLocation({ x: 2, y: 9})
+
+console.log(g.asciiPrint())
+*/

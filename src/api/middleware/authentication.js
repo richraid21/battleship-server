@@ -2,7 +2,8 @@
 import _ from 'lodash'
 import winston from 'winston'
 
-const _retrieveUserFromSession = async (knex, token) => {
+export const retrieveUserFromSession = async (knex, token) => {
+    console.log(token)
     try {
         const session = await knex('session')
                                 .first()
@@ -11,14 +12,22 @@ const _retrieveUserFromSession = async (knex, token) => {
                                 .andWhere('number', token)
                                 .andWhere('active', true)
                                 .orderBy('expires', 'desc')
-        
+
         return session
 
     } catch (err) {
-        winston.warn('Could not validate user session')
+        winston.warn('Could not validate user session', err)
         return false
     }
     
+}
+
+export const buildUserObjectFromSession = (session) => {
+    return {
+        id: session.id,
+        username: session.nickname,
+        datecreated: session.datecreated
+    }
 }
 
 export const requiresAuth = (routeHandler) => async (req, res) => {
@@ -39,14 +48,10 @@ export const requiresAuth = (routeHandler) => async (req, res) => {
         return
     }
 
-    const session = await _retrieveUserFromSession(req._knex, token)
+    const session = await retrieveUserFromSession(req._knex, token)
     
     if (session){
-        req._user = {
-            id: session.id,
-            username: session.nickname,
-            datecreated: session.datecreated
-        }
+        req._user = buildUserObjectFromSession(session)
     } else {
         res.send(401, { message: 'Invalid Session'})
         

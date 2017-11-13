@@ -123,12 +123,15 @@ class GameInstance {
         return (this.currentPlayer === playerNumber)
     }
 
+    setCurrentPlayer(playerNumber){
+        this.currentPlayer = playerNumber
+        this.broadcastMessage('GAME:PLAYER:TURN', `It is player ${playerNumber} turn`, { player: playerNumber })
+    }
+
     nextPlayer(){
         if (this.currentPlayer){
-            const next = this.currentPlayer === 1 ? 2 : 1
-            this.currentPlayer = next
-
-            return next
+            this.currentPlayer = this.getOpponent()
+            return this.currentPlayer
         }
 
         throw new Error('Cannot move to next player without current player')
@@ -175,9 +178,9 @@ class GameInstance {
 
             // If both players have successfully placed all their pieces, we can transition to In-Progress
             if (allPiecesPlaced){
-                this.transitionState('IN-PROGRESS')
-                this.broadcastStateChange('IN-PROGRESS', 'Game can now begin!')
-                this.broadcastMessage('GAME:PLAYER:TURN', 'It is player 1s turn', { player: 1 })
+                this.transitionState('INPROGRESS')
+                this.broadcastStateChange('INPROGRESS', 'Game can now begin!')
+                this.setCurrentPlayer(1)
             }
 
             return true
@@ -189,17 +192,104 @@ class GameInstance {
     }
 
     isGameOver(){
+        const player1Lost = this.players[1].board.isGameOver()
+        const player2Lost = this.players[2].board.isGameOver()
+
+        // If neither player lost, the game is still going, return false
+        if (!player1Lost && !player2Lost)
+            return false
         
+        
+        let event = {
+            gameid: this.gameid,
+            datecreated: knex.fn.now(),
+            action: {
+                gameid: this.gameid,
+                type: 'GAME_OVER'
+            }
+        }
+        
+        //If player x lost, then player y won
+        if (player1Lost){
+            event.action.winner = this.players[2].data
+        }
+        
+        if (player2Lost){
+            event.action.winner = this.players[1].data
+        }
+
+        //Log game over
+        knex('game_action').insert(event).catch((e) => {
+            winston.log('warn', 'Unable to log game_over event', event.action, e)
+        })
+        
+        
+        //Transition to completed
+        this.transitionState('COMPLETED')
+
+        //Broadcast gameover
+        this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner})
+
+        return true
+
+    }
+
+    getOpponent(){
+        return this.currentPlayer === 1 ? 2 : 1
+    }
+    getCurrentPlayerTargetBoard(){
+        return this.players[this.getOpponent()].board
     }
 
     guessLocation(playerNumber, location){
-        if (isPlayerTurn(playerNumber)){
+        if (isPlayerTurn(playerNumber) && isState('INPROGRESS')){
+            try {
+                // Get board opposite current player and guess the location
+                const board = this.getCurrentPlayerTargetBoard()
+                let response = board.guessLocation(location)
+                
+                //Accept their guess and send the result
+                this.messageToPlayer(playerNumber, 'GAME:GUESS:ACCEPT', '', response)
+                
+                //Swap views and return the response to the opponent
+                response.board = board.view()
+                this.messageToPlayer(this.getOpponent(), 'GAME:GUESS:OPPONENT', '', response)
 
-            nextPlayer()
-            return true
+                
+                //Record the event
+                const event = {
+                    gameid: this.gameid,
+                    datecreated: knex.fn.now(),
+                    action: {
+                        gameid: this.gameid,
+                        type: 'PLAYER_GUESS',
+                        player: this.players[playerNumber].data,
+                        response: response
+                    }
+                }
+        
+                knex('game_action').insert(event).catch((e) => {
+                    winston.log('warn', 'Unable to log player guess', event.action, e)
+                })
+                
+                
+                //Switch Turns if game isnt over
+                if (!this.isGameOver())
+                    nextPlayer()
+            } catch (e) {
+                this.messageToPlayer(playerNumber, 'GAME:GUESS:REJECT', e.message)
+            }
+        } else {
+            this.messageToPlayer(playerNumber, 'GAME:GUESS:REJECT', 'Not your turn!')
         }
+    }
 
-        throw new Error('Not your turn')
+    messageToPlayer(playerNumber, type = '', message = '', playload = {}){
+        this.players[playerNumber].socket.json({
+            type,
+            message,
+            payload
+        })
     }
 
     broadcastStateChange(state, message = ''){

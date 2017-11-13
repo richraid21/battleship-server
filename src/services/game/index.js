@@ -140,7 +140,17 @@ export class GameServer {
                         game.setupPieces(playerNumber, message.payload)
                         break;
                     case 'GAME:GUESS:ATTEMPT':
+                        game.guessLocation(playerNumber, message.payload)
                         break;
+                }
+
+                if (game.isState('COMPLETED')){
+                    
+                    game.allPlayers().forEach((player) => {
+                        player.socket.terminate()
+                    })
+
+                    delete this.games[gameid]
                 }
                 
 

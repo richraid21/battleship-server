@@ -33,6 +33,7 @@ class GameBoard {
 
         this.board = {
             piecesPlaced: 0,
+            piecesSank: 0,
             nodes: new Array(this.width)
         }
 
@@ -49,6 +50,10 @@ class GameBoard {
         }
 
         return data
+    }
+
+    isGameOver(){
+        return piecesPlaced === piecesSank
     }
 
     allPiecesPlaced() {
@@ -123,29 +128,47 @@ class GameBoard {
 
     guessLocation(location) {
         const n = this.board.nodes[location.x][location.y]
+        let response = {
+            result: ''
+        }
         
+        // If no current node, nothing is there and it is a miss
         if (!n){
+
             n = {
                 guessed: true
             }
-            return
-        }
 
-        if (n.guessed){
-            throw new Error('You already guessed that!')
-        }
+            response.result = 'MISS'
 
-        console.log('Hit')
-        n.hit = true
-        n.guessed = true
-
-        const hitCount = this.getHitNodesByShipName(n.name).length
-        if (hitCount === PIECES[n.name].length){
-            console.log('SUNK!')
-            this.markShipSank(n.name)
         } else {
-            console.log('Keep trying....')
+            
+            // If there is a node, but already guessed
+            if (n.guessed){
+                throw new Error('You already guessed that!')
+            }
+    
+            // Else, it is now hit and guessed
+            n.hit = true
+            n.guessed = true
+    
+            response.result = 'HIT'
+    
+            // If hit, and the last node needed to sink the ship, mark all nodes for that
+            // ship as sank and return the name of the sunken ship
+            const hitCount = this.getHitNodesByShipName(n.name).length
+            if (hitCount === PIECES[n.name].length){
+                this.piecesSank++
+                this.markShipSank(n.name)
+                response.result = 'SANK'
+                response.name = n.name
+            }
+
         }
+
+        // Always return the new board representation
+        response.board = this.restrictedView()
+        return response
     }
 
     markShipSank(name) {

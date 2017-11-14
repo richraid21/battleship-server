@@ -13,7 +13,7 @@ Player: Object {
 }
 ```
 
-### Game 
+### Board
 ```javascript
 Game: Object {
     piecesPlaced: Number, // Ony shown to Owner
@@ -22,7 +22,7 @@ Game: Object {
 }
 ```
 
-### GameNode
+### BoardNode
 Depending on what board you are looking at, the structure will contain everything listed here, or just a subset. (You obviously can't see the opponents information if you havent gussed the node yet)
 ```javascript
 // SHOWN TO                 Owner   Opponent (reason)

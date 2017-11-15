@@ -32,7 +32,7 @@
     "automock": false,
     "verbose": true,
     "roots": [
-      "<rootDir>/test/"
+      "<rootDir>/test"
     ]
   },
   "scripts": {
@@ -46,6 +46,6 @@
     "launch": "node ./lib/server.js",
     "start": "yarn build && yarn launch",
     "docs": "apidoc -i src/api/routes -o docs/",
-    "test": "jest"
+    "test": "jest harness.spec.js"
   }
 }

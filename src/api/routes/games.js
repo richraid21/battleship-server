@@ -58,7 +58,12 @@ const createGame = async (req, res) => {
             status: 'CREATING',
             player1: req._user.id
         }
+
         const [game] = await req._knex('game').insert(data).returning('*')
+        
+        game.player1 = {
+            username: req._user.username
+        }
 
         res.send(200, game)
     } catch (err) {
@@ -121,7 +126,7 @@ const joinGame = async (req, res) => {
             const join = await req._knex('game').update('player2', req._user.id).where('id', gameId)
             
             if (join == 1){
-                return res.send(200, { message: 'Joined!'})
+                return res.send(200, { message: 'OK'})
             } else {
                 return genericServerError(res)
             }
@@ -153,7 +158,7 @@ const removeGame = async (req, res) => {
 
             const deleteAction = await req._knex('game').del().where('id', gameId)
             
-            res.send(200, deleteAction)
+            res.send(200, { message: 'OK'})
         
     } catch (err) {
         winston.log('warn', 'deleteGame() failed: ', err)

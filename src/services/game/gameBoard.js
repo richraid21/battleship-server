@@ -53,11 +53,11 @@ class GameBoard {
     }
 
     isGameOver(){
-        return piecesPlaced === piecesSank
+        return this.board.piecesPlaced === this.board.piecesSank
     }
 
     allPiecesPlaced() {
-        return this.piecesPlaced === Object.keys(PIECES).length
+        return this.board.piecesPlaced === Object.keys(PIECES).length
     }
 
     placeShips(ships) {
@@ -121,7 +121,7 @@ class GameBoard {
         })
 
         // Return the board object
-        this.piecesPlaced++
+        this.board.piecesPlaced++
         return this.view()
         
     }
@@ -133,37 +133,31 @@ class GameBoard {
         }
         
         // If no current node, nothing is there and it is a miss
-        if (!n){
+        
+        if (n && n.guessed){
+            throw new Error('You already guessed that!')
+            return
+        }
 
-            n = {
-                guessed: true
-            }
+        
+        n.guessed = true
 
+        if (!n.name){
             response.result = 'MISS'
-
         } else {
-            
-            // If there is a node, but already guessed
-            if (n.guessed){
-                throw new Error('You already guessed that!')
-            }
-    
-            // Else, it is now hit and guessed
-            n.hit = true
-            n.guessed = true
-    
             response.result = 'HIT'
-    
+            n.hit = true
+
             // If hit, and the last node needed to sink the ship, mark all nodes for that
             // ship as sank and return the name of the sunken ship
+            
             const hitCount = this.getHitNodesByShipName(n.name).length
             if (hitCount === PIECES[n.name].length){
-                this.piecesSank++
+                this.board.piecesSank++
                 this.markShipSank(n.name)
                 response.result = 'SANK'
                 response.name = n.name
             }
-
         }
 
         // Always return the new board representation

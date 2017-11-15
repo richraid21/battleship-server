@@ -90,10 +90,10 @@ class GameInstance {
         if ( newState in VALID_GAME_STATES){
             this.currentState = newState
 
-            knex('game').update({ status: newState}).where({ gameid: this.gameid})
-                .catch((e) => {
-                    winston.log('warn', 'Unable to transition state', { gameid: this.gameid, state: newState}, e)
-                })
+            knex('game').update({ status: newState}).where({ id: this.gameid})
+            .catch((e) => {
+                winston.log('warn', 'Unable to transition state', { gameid: this.gameid, state: newState}, e)
+            })
 
             const event = { 
                 gameid: this.gameid, 
@@ -105,7 +105,8 @@ class GameInstance {
                 }
             }
             
-            knex('game_action').insert(event).catch((e) => {
+            knex('game_action').insert(event)
+            .catch((e) => {
                 winston.log('warn', 'Unable to log state transition', event.action, e)
             })
 
@@ -133,7 +134,8 @@ class GameInstance {
 
     nextPlayer(){
         if (this.currentPlayer){
-            this.currentPlayer = this.getOpponent()
+            const next = this.getOpponent()
+            this.setCurrentPlayer(next)
             return this.currentPlayer
         }
 
@@ -150,7 +152,7 @@ class GameInstance {
     setupPieces(playerNumber, pieceSet){
         
         // The game must be in SETUP mode to place pieces
-        if (isState('SETUP')){
+        if (this.isState('SETUP')){
             const player = this.players[playerNumber]
             try{
 
@@ -180,7 +182,7 @@ class GameInstance {
             }
 
             // If both players have successfully placed all their pieces, we can transition to In-Progress
-            if (allPiecesPlaced){
+            if (this.allPiecesPlaced()){
                 this.transitionState('INPROGRESS')
                 this.broadcastStateChange('INPROGRESS', 'Game can now begin!')
                 this.setCurrentPlayer(1)
@@ -260,7 +262,7 @@ class GameInstance {
     }
 
     guessLocation(playerNumber, location){
-        if (isPlayerTurn(playerNumber) && isState('INPROGRESS')){
+        if (this.isPlayerTurn(playerNumber) && this.isState('INPROGRESS')){
             try {
                 // Get board opposite current player and guess the location
                 const board = this.getCurrentPlayerTargetBoard()
@@ -293,9 +295,10 @@ class GameInstance {
                 
                 //Switch Turns if game isnt over
                 if (!this.isGameOver())
-                    nextPlayer()
+                    this.nextPlayer()
             
             } catch (e) {
+                winston.log('warn', 'Game Guess Error', { gameid: this.gameid, location }, e)
                 this.messageToPlayer(playerNumber, 'GAME:GUESS:REJECT', e.message)
             }
         } else {
@@ -303,7 +306,7 @@ class GameInstance {
         }
     }
 
-    messageToPlayer(playerNumber, type = '', message = '', playload = {}){
+    messageToPlayer(playerNumber, type = '', message = '', payload = {}){
         this.players[playerNumber].socket.json({
             type,
             message,
@@ -376,7 +379,7 @@ class GameInstance {
             }
         }
 
-        knex('game_action').insert(event).catch((err) => {
+        knex('game_action').insert(event).catch((e) => {
             winston.log('warn', 'Unable to log action', event.action, e)
         })
 

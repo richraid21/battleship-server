@@ -18,10 +18,10 @@ const truncate = () => {
     })
   }
 
-describe('Integration Tests', function () {
+describe('Unit Tests', function () {
     
       beforeAll(function () {
-        return truncate()
+        return truncate().then(() => knex.seed.run())
       });
     
       afterAll(function () {
@@ -32,6 +32,7 @@ describe('Integration Tests', function () {
       require('./api/games.test')
 
       require('./services/ranking.test')
+      require('./services/game/game_instance.test')
     
     });
 

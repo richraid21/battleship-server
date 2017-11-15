@@ -1,27 +1,15 @@
 import request from 'supertest'
 import { basicServer } from '../../src/app'
-import config from '../../src/knexfile'
 import _ from 'lodash'
 
 describe('Game Routes', async () => {
     const app = basicServer()
-    const knex = require('knex')(config)
 
     // User "Rich" from /seeds/testData
     const tokens = {
         rich: '3c1a20461b60b01981660be5693e66b9a164846d598560c518b0054063d0285a',
         will: 'f34e1b84cc606e279d12a202d1ed3196140f5bf89b334cb106d3057c5f361f43'
     }
-
-    beforeAll(async () => {
-        return knex.seed.run()
-    })
-
-    afterAll(async (done) => {
-        knex.destroy()
-        app.close()
-        done()
-    })
 
     test('/games - It should return a list of games', async () => {
         const games = await request(app).get('/api/games').set('Authorization', `Basic ${tokens.rich}`)

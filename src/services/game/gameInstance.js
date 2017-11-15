@@ -190,7 +190,8 @@ class GameInstance {
 
             return true
         } else {
-            player.socket.json({ type: 'GAME:PIECES:REJECT', message: 'Can only place pieces when game is in SETUP mode'})
+			//TODO write a test for this
+			this.messageToPlayer(playerNumber, 'GAME:GUESS:REJECT', 'Can only place pieces when game is in SETUP mode')
             return false
         }
 

@@ -134,7 +134,7 @@ export class GameServer {
                 }
                 
                 const playerNumber = player.username === result.rows[0].player1.username ? 1 : 2
-                const game = this.games[gameid]
+                let game = this.games[gameid]
 
                 // If the game isn't in memory, we need to fetch it
                 if (!this.games.hasOwnProperty(gameid)){

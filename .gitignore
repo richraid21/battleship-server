@@ -1,7 +1,11 @@
 
+# Folders
 node_modules
+coverage
 .vscode
 lib
 docs
+
+#File Types
 **/*.log
 .env

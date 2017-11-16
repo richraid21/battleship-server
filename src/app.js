@@ -25,7 +25,7 @@ export const initializeApplication = async () => {
     
     const cors = corsMiddleware({
       origins: ['*'],
-      allowHeaders: ['*'],
+      allowHeaders: ['Authorization'],
       exposeHeaders: ['*']
     })
     

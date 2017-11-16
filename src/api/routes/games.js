@@ -101,25 +101,28 @@ const getGame = async (req, res) => {
 }
 
 const joinGame = async (req, res) => {
+    
     try {
         const gameId = req.params.id
         if (!parseInt(gameId))
             return malformedError(res, 'Requires a valid integer')
         
         
-            const result = await req._knex.raw(singleGameQuery, [gameId])
-            const game = result.rows
+            const game = await req._knex('game').first().where({id: gameId})
 
-            if (game.length == 0){
+            if (!game){
                 return res.send(404)
             }
             
-            if (req._user.id === game[0].player1.id){
+            // player1 the field is the user id foreign key
+            // player1 when returned via the custom query is the player object
+            console.log(req._user.id, game.player1)
+            if (req._user.id === game.player1){
                 return forbiddenError(res, 'You cannot join your own game. You made it!')
             }
 
             
-            if (game[0].player2){
+            if (game.player2 === null){
                 return forbiddenError(res, 'This game already has two players. Sorry!')
             }
 

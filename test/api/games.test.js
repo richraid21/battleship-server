@@ -54,12 +54,21 @@ describe('Game Routes', async () => {
     })
 
     test('/games/:id/join - It should join the game', async () => {
-        const join = await request(app).get('/api/games/10000').set('Authorization', `Basic ${tokens.will}`)
-        
+        const join = await request(app).post('/api/games/10000/join').set('Authorization', `Basic ${tokens.will}`)
+
         expect(join.status).toBe(200)
+        expect(join.body.message).toBe('OK')
 
         const game = await request(app).get('/api/games/10000').set('Authorization', `Basic ${tokens.rich}`)
 
         expect(game.body[0].player2.username).toBe('will')
+    })
+
+    test('/games/:id/join - It shouldnt let a player join their own game', async () => {
+        
+        const join = await request(app).post('/api/games/20000/join').set('Authorization', `Basic ${tokens.rich}`)
+
+        expect(join.status).toBe(403)
+
     })
 })

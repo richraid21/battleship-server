@@ -33,6 +33,9 @@ describe('Unit Tests', function () {
 
       require('./services/ranking.test')
       require('./services/game/game_instance.test')
+
+      require('./app.test')
+      require('./api/utils/terminate.test')
     
     });
 

@@ -135,12 +135,13 @@ export class GameServer {
                 
                 const playerNumber = player.username === result.rows[0].player1.username ? 1 : 2
                 let game = this.games[gameid]
-
+                
                 // If the game isn't in memory, we need to fetch it
-                if (!this.games.hasOwnProperty(gameid)){
-                    
-                    const gameState = await knex('game').first('state').where({ id: gameid})
-                    game = new GameInstance(gameState || { gameid: gameid})
+                if (!game){
+                    console.log('Grabbing game from DB')
+                    const existingGameState = await knex('game').first('state').where({ id: gameid})
+                    game = new GameInstance({ gameid })
+                    this.games[gameid] = game
                 }
 
                 // If player is joining the socket...

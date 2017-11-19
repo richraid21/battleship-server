@@ -384,7 +384,7 @@ class GameInstance {
             winston.log('warn', 'Unable to log action', event.action, e)
         })
 
-        if (this.players[1] && this.players[2]){
+        if (this.isPlayerHere(1) && this.isPlayerHere(2)){
             this.transitionState('SETUP')
             this.broadcastStateChange('SETUP', 'Setup your pieces!')
         } else {

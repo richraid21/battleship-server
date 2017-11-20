@@ -5,6 +5,7 @@ coverage
 .vscode
 lib
 docs
+.idea
 
 #File Types
 **/*.log

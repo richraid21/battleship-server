@@ -121,7 +121,7 @@ const joinGame = async (req, res) => {
             }
 
             
-            if (game.player2 === null){
+            if (game.player2 !== null){
                 return forbiddenError(res, 'This game already has two players. Sorry!')
             }
 

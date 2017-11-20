@@ -116,7 +116,6 @@ const joinGame = async (req, res) => {
             
             // player1 the field is the user id foreign key
             // player1 when returned via the custom query is the player object
-            console.log(req._user.id, game.player1)
             if (req._user.id === game.player1){
                 return forbiddenError(res, 'You cannot join your own game. You made it!')
             }

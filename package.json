@@ -46,6 +46,8 @@
     "launch": "node ./lib/server.js",
     "start": "yarn build && yarn launch",
     "docs": "apidoc -i src/api/routes -o docs/",
+    "test:unit": "jest unit.spec.js",
+    "test:e2e": "jest e2e.spec.js",
     "test": "jest harness.spec.js"
   }
 }

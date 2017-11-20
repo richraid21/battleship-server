@@ -65,7 +65,7 @@ export class GameServer {
                     let player = {}
                     
                     game.allPlayers().forEach((player) => {
-                        if (player.socket.id == socket.id){
+                        if (player.socket && player.socket.id == socket.id){
                             player.socket = null
                             player = player.data
                         }

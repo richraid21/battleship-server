@@ -109,7 +109,7 @@ const joinGame = async (req, res) => {
         
         
             const game = await req._knex('game').first().where({id: gameId})
-
+            console.log(game.player2)
             if (!game){
                 return res.send(404)
             }

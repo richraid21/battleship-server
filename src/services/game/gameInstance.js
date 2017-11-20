@@ -42,7 +42,7 @@ class GameInstance {
         const state = this.toJson()
         
         try {
-            const res = await knex('game').update({ state }).where({id: this.gameid})
+            const res = await knex('game').update({ status: this.currentState, state }).where({id: this.gameid})
             return true
         } catch (e) {
             winston.log('warn', 'Could not persist in-memory game: ', e, state)
@@ -86,11 +86,11 @@ class GameInstance {
         })
     }
 
-    transitionState(newState){
+    async transitionState(newState){
         if ( newState in VALID_GAME_STATES){
             this.currentState = newState
 
-            knex('game').update({ status: newState}).where({ id: this.gameid})
+            await knex('game').update({ status: newState}).where({ id: this.gameid})
             .catch((e) => {
                 winston.log('warn', 'Unable to transition state', { gameid: this.gameid, state: newState}, e)
             })
@@ -105,12 +105,13 @@ class GameInstance {
                 }
             }
             
-            knex('game_action').insert(event)
+            await knex('game_action').insert(event)
             .catch((e) => {
                 winston.log('warn', 'Unable to log state transition', event.action, e)
             })
 
-            return newState
+            await this.persist()
+            return true
         } 
         
         throw new Error('Invalid game state')
@@ -149,7 +150,7 @@ class GameInstance {
         return player1Ready && player2Ready
     }
 
-    setupPieces(playerNumber, pieceSet){
+    async setupPieces(playerNumber, pieceSet){
         
         // The game must be in SETUP mode to place pieces
         if (this.isState('SETUP')){
@@ -169,7 +170,7 @@ class GameInstance {
                     }
                 }
 
-                knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event).catch((e) => {
                     winston.log('warn', 'Unable to log action', event.action, e)
                 })
 
@@ -183,7 +184,7 @@ class GameInstance {
 
             // If both players have successfully placed all their pieces, we can transition to In-Progress
             if (this.allPiecesPlaced()){
-                this.transitionState('INPROGRESS')
+                await this.transitionState('INPROGRESS')
                 this.broadcastStateChange('INPROGRESS', 'Game can now begin!')
                 this.setCurrentPlayer(1)
             }
@@ -197,7 +198,7 @@ class GameInstance {
 
     }
 
-    isGameOver(){
+    async isGameOver(){
         const player1Lost = this.players[1].board.isGameOver()
         const player2Lost = this.players[2].board.isGameOver()
 
@@ -231,23 +232,23 @@ class GameInstance {
         event.action.loser = this.players[loser].data
 
         //Log game over
-        knex('game_action').insert(event).catch((e) => {
+        await knex('game_action').insert(event).catch((e) => {
             winston.log('warn', 'Unable to log game_over event', event.action, e)
         })
 
         // Insert result
-        knex('game_result').insert({gameid: this.gameid, winner: event.action.winner.id, loser: event.action.loser.id}).catch((e) => {
+        await knex('game_result').insert({gameid: this.gameid, winner: event.action.winner.id, loser: event.action.loser.id}).catch((e) => {
             winston.log('warn', 'Unable to insert game_result', event.action, e)
         })
 
         // Update game status
-        knex('game').update({status: 'COMPLETED'}).where({id: this.gameid}).catch((e) => {
+        await knex('game').update({status: 'COMPLETED'}).where({id: this.gameid}).catch((e) => {
             winston.log('warn', 'Unable to update game to completed', event.action, e)
         })
         
         
         //Transition to completed
-        this.transitionState('COMPLETED')
+        await this.transitionState('COMPLETED')
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner, loser: event.action.loser})
 
@@ -262,7 +263,7 @@ class GameInstance {
         return this.players[this.getOpponent()].board
     }
 
-    guessLocation(playerNumber, location){
+    async guessLocation(playerNumber, location){
         if (this.isPlayerTurn(playerNumber) && this.isState('INPROGRESS')){
             try {
                 // Get board opposite current player and guess the location
@@ -289,13 +290,14 @@ class GameInstance {
                     }
                 }
         
-                knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event).catch((e) => {
                     winston.log('warn', 'Unable to log player guess', event.action, e)
                 })
                 
                 
                 //Switch Turns if game isnt over
-                if (!this.isGameOver())
+                const gameOver = await this.isGameOver()
+                if (!gameOver)
                     this.nextPlayer()
             
             } catch (e) {
@@ -360,7 +362,7 @@ class GameInstance {
         return false
     }
 
-    addPlayerConnection(playerNumber, socket, data = {}){
+    async addPlayerConnection(playerNumber, socket, data = {}){
         const player = {
             board: new GameBoard(),
             data: data,
@@ -380,15 +382,15 @@ class GameInstance {
             }
         }
 
-        knex('game_action').insert(event).catch((e) => {
-            winston.log('warn', 'Unable to log action', event.action, e)
+        await knex('game_action').insert(event).catch((e) => {
+            winston.log('warn', 'Unable to PLAYER_JOIN action', event.action, e)
         })
 
         if (this.isPlayerHere(1) && this.isPlayerHere(2)){
-            this.transitionState('SETUP')
+            await this.transitionState('SETUP')
             this.broadcastStateChange('SETUP', 'Setup your pieces!')
         } else {
-            this.transitionState('WAITING')
+            await this.transitionState('WAITING')
             this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
         }
     }

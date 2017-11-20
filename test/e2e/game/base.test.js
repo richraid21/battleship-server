@@ -1,6 +1,7 @@
 
 const WebSocket = require('ws')
 const _ = require('lodash')
+const knex = require('../../../src/services/data').default
 
 const serverUrl = 'ws://localhost:8080/game/10000'
 
@@ -95,8 +96,8 @@ describe('Game - Base Choice Path', () => {
 
         // Messages to player 2 get put into the stack, but since player 2
         // will get more messages, we do the actual assertions inside here
-        player(2, 'socket').on('message', (message) => {
-            expect.assertions(9)
+        player(2, 'socket').on('message', async (message) => {
+            expect.assertions(10)
             
             const data = JSON.parse(message)
             messageStacks[2].push(data)
@@ -123,6 +124,9 @@ describe('Game - Base Choice Path', () => {
                 
                 const player2_gameState = _.find(messageStacks[2], { type: 'GAME:STATE' })
                 expect(player2_gameState).toBeTruthy()
+
+                const game = await knex('game').first().where({ id: 10000 })
+                expect(game.state.currentState).toBe('SETUP')
 
                 done()
             }

@@ -172,7 +172,8 @@ export class GameServer {
 
                 // Persisting after every authenticated message should be fine?
                 // TODO: think about persisting...
-                game.persist()
+                await game.persist()
+                return
             })
         })
     }

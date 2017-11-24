@@ -167,6 +167,22 @@ const removeGame = async (req, res) => {
     }
 }
 
+const gameHistory = async (req, res) => {
+    const gameId = req.params.id
+    if (!parseInt(gameId))
+        return malformedError(res, 'Requires a valid integer')
+
+    try {
+        const columns = ['datecreated', 'action']
+        const history = await req._knex('game_action').select(columns).where({ gameid }).orderBy('datecreated')
+
+        res.send(200, history)
+    } catch (err) {
+        winston.log('warn', 'gameHistory faild', err)
+        genericServerError(res)
+    }
+}
+
 
 
 export const games = {
@@ -178,5 +194,6 @@ export const game = {
     get: requiresAuth(getGame),
     join: requiresAuth(joinGame),
     remove: requiresAuth(removeGame),
+    history: requiresAuth(gameHistory)
 }
 

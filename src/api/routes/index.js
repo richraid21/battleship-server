@@ -199,6 +199,25 @@ const routes = (app) => {
         path = '/:id'
         app.get(getPath(), game.get)
 
+         /**
+         * @api {post} /games/id/history  Get event history of Game
+         * @apiDescription Get the move history for the specified game
+         * @apiVersion 1.0.0
+         * @apiName gameHistory
+         * @apiGroup Games
+         * 
+         * @apiHeader {String}  Authorization Access key in form of 'Basic $token'.
+         * 
+         * @apiParam {String} gameid The id of the game
+         * 
+         * @apiSuccess {Array} GameActions The list of game actions for the specified game, sorted by date
+         * 
+         * @apiError {String}   message The reason for the failure.
+         * 
+         */
+        path = '/:id/history'
+        app.post(getPath(), game.join)
+
         /**
          * @api {post} /games/id/join  Join a public Game
          * @apiDescription  Join a publicly listed game. On 200 response, you can now connect with the game socket server at /game/id

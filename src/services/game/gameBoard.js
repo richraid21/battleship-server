@@ -47,6 +47,21 @@ class GameBoard {
                 })
             }
         }
+
+        if (config.board){
+            this.setup(config)
+        }
+    }
+
+    setup(config){
+        const board = config.board
+        
+        if (board.piecesPlaced)
+            this.board.piecesPlaced = board.piecesPlaced
+        if (board.piecesSank)
+            this.board.piecesSank = board.piecesSank
+        if (board.nodes && board.nodes.length > 0)
+            this.board.nodes = board.nodes
     }
 
     toJson() {

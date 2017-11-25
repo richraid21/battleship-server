@@ -23,14 +23,18 @@ const VALID_GAME_STATES = {
 class GameInstance {
     constructor(config = {}){
         
-        this.gameid = config.gameid || 0
+        this.gameid = 0
 
-        this.currentState = config.currentState || 'CREATING'
-        this.currentPlayer = config.currentPlayer || false
+        this.currentState = 'CREATING'
+        this.currentPlayer = false
         
         this.players = {
             // Structure....
             // 1: { board: new GameBoard(), data: {}, socket: null }
+        }
+
+        if (config){
+            this.setup(config)
         }
 
         if (config.players){
@@ -40,7 +44,7 @@ class GameInstance {
 
     async persist(){
         const state = this.toJson()
-        
+
         try {
             const res = await knex('game').update({ status: this.currentState, state }).where({id: this.gameid})
             return true
@@ -70,6 +74,17 @@ class GameInstance {
         })
 
         return data
+    }
+
+    setup(config){
+        if (config.gameid)
+            this.gameid = config.gameid
+       
+        if (config.currentPlayer)
+            this.currentPlayer = config.currentPlayer
+
+        if (config.currentState)
+            this.currentState = config.currentState
     }
 
     fillExistingPlayers(config = {}){
@@ -170,9 +185,12 @@ class GameInstance {
                     }
                 }
 
-                await knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event)
+                .catch((e) => {
                     winston.log('warn', 'Unable to log action', event.action, e)
                 })
+
+                await this.persist()
 
                 player.socket.json({ type: 'GAME:PIECES:ACCEPT', payload: board})
 
@@ -232,7 +250,8 @@ class GameInstance {
         event.action.loser = this.players[loser].data
 
         //Log game over
-        await knex('game_action').insert(event).catch((e) => {
+        await knex('game_action').insert(event)
+        .catch((e) => {
             winston.log('warn', 'Unable to log game_over event', event.action, e)
         })
 
@@ -252,12 +271,15 @@ class GameInstance {
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner, loser: event.action.loser})
 
+        await this.persist()
+
         return true
 
     }
 
     getOpponent(){
-        return this.currentPlayer === 1 ? 2 : 1
+        const o = this.currentPlayer === 1 ? 2 : 1
+        return o
     }
     getCurrentPlayerTargetBoard(){
         return this.players[this.getOpponent()].board
@@ -290,7 +312,8 @@ class GameInstance {
                     }
                 }
         
-                await knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event)
+                .catch((e) => {
                     winston.log('warn', 'Unable to log player guess', event.action, e)
                 })
                 
@@ -299,6 +322,8 @@ class GameInstance {
                 const gameOver = await this.isGameOver()
                 if (!gameOver)
                     this.nextPlayer()
+
+                await this.persist()
             
             } catch (e) {
                 winston.log('warn', 'Game Guess Error', { gameid: this.gameid, location }, e)
@@ -382,9 +407,12 @@ class GameInstance {
             }
         }
 
-        await knex('game_action').insert(event).catch((e) => {
+        await knex('game_action').insert(event)
+        .catch((e) => {
             winston.log('warn', 'Unable to PLAYER_JOIN action', event.action, e)
         })
+
+        await this.persist()
 
         if (this.isPlayerHere(1) && this.isPlayerHere(2)){
             await this.transitionState('SETUP')

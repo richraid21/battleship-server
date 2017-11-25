@@ -335,11 +335,15 @@ class GameInstance {
     }
 
     messageToPlayer(playerNumber, type = '', message = '', payload = {}){
-        this.players[playerNumber].socket.json({
-            type,
-            message,
-            payload
-        })
+        const socket = this.players[playerNumber].socket
+        if (socket){
+            socket.json({
+                type,
+                message,
+                payload
+            })
+        }
+        
     }
 
     broadcastStateChange(state, message = ''){
@@ -388,10 +392,21 @@ class GameInstance {
     }
 
     async addPlayerConnection(playerNumber, socket, data = {}){
-        const player = {
-            board: new GameBoard(),
-            data: data,
-            socket: socket
+        
+        let firstTimeJoin // false | true
+        
+        const existing = this.players[playerNumber]
+        if (existing){
+            firstTimeJoin = false
+        } else {
+            firstTimeJoin = true
+        }
+        
+        const info = existing || {}
+        let player = {
+            socket,
+            board: info.board || new GameBoard(),
+            data: info.data || data
         }
 
         this.players[playerNumber] = player
@@ -414,13 +429,27 @@ class GameInstance {
 
         await this.persist()
 
-        if (this.isPlayerHere(1) && this.isPlayerHere(2)){
-            await this.transitionState('SETUP')
-            this.broadcastStateChange('SETUP', 'Setup your pieces!')
+        // If the player is joining for the first time, we check to see if now both players are here
+        if (firstTimeJoin){
+            if (this.isPlayerHere(1) && this.isPlayerHere(2)){
+                // If both players are here after someones first time joining, we can transition to SETUP
+                await this.transitionState('SETUP')
+                this.broadcastStateChange('SETUP', 'Setup your pieces!')
+            } else {
+                //If one player is missing, we still have to wait
+                await this.transitionState('WAITING')
+                this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
+            }
         } else {
-            await this.transitionState('WAITING')
-            this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
+            // If this is not the players first time joining, aka reconnecting, we just send them the current state
+            // and other information
+            this.messageToPlayer(playerNumber, 'GAME:STATE', 'Welcome back', { state: this.currentState })
+
+            // TODO: what to send back?
         }
+
+
+        
     }
 
 }

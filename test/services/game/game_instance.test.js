@@ -304,6 +304,9 @@ describe('Game Instance Unit Tests', () => {
     })
 
     it('Should persist the stats and information to the database after the game', async () => {
+        const game = await knex('game').first().where({ id: 10000 })
+        expect(game.status).toBe('COMPLETED')
+
         const actions = await knex('game_action').select().where({ gameid: 10000})
 
         const join1 = _.find(actions, { action: { type: 'PLAYER_JOIN', player: { id: data.player1.id }}})

@@ -172,16 +172,18 @@ const removeGame = async (req, res) => {
 }
 
 const gameHistory = async (req, res) => {
-    const gameId = req.params.id
-    if (!parseInt(gameId))
+    const gameid = req.params.id
+    if (!parseInt(gameid))
         return malformedError(res, 'Requires a valid integer')
 
     try {
         
         // Ensure its over before showing move history
-        const status = await req._knex('game').first('status').where({ id: gameid})
-        if (status != 'COMPLETED')
-            forbiddenError(res, 'This game is not over yet!')
+        const game = await req._knex('game').first().where({ id: gameid})
+        if (game.status !== 'COMPLETED'){
+            return forbiddenError(res, 'This game is not over yet!')
+        }
+            
 
         // Ayoooo
         const columns = ['gameid', 'datecreated', 'action']

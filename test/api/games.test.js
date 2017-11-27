@@ -15,7 +15,7 @@ describe('Game Routes', async () => {
         const games = await request(app).get('/api/games').set('Authorization', `Basic ${tokens.rich}`)
         
         expect(games.status).toBe(200)
-        expect(games.body.length).toBe(3)
+        expect(games.body.length).toBeGreaterThan(0)
         expect(_.find(games.body, {id: 10000}).name).toBe('Richs Game with Will')
     })
 
@@ -81,5 +81,25 @@ describe('Game Routes', async () => {
 
         expect(join.status).toBe(403)
 
+    })
+
+    test('/games/:id/history - It should not show in-progress game', async () => {
+        const history = await request(app).get('/api/games/20000/history').set('Authorization', `Basic ${tokens.rich}`)
+        expect(history.status).toBe(403)
+    })
+
+    test('/games/:id/history - It should only show history for COMPLETED games', async () => {
+        expect.assertions(57) // 11 history items * 4 property assertions + status
+        const history = await request(app).get('/api/games/40000/history').set('Authorization', `Basic ${tokens.rich}`)
+        
+        expect(history.status).toBe(200)
+
+        history.body.forEach(el => {
+            expect(el.action).toHaveProperty('type')
+            expect(el.action).toHaveProperty('gameid')
+            expect(el).toHaveProperty('gameid')
+            expect(el).toHaveProperty('datecreated')
+        })
+        
     })
 })

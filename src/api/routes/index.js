@@ -216,7 +216,7 @@ const routes = (app) => {
          * 
          */
         path = '/:id/history'
-        app.post(getPath(), game.join)
+        app.get(getPath(), game.history)
 
         /**
          * @api {post} /games/id/join  Join a public Game

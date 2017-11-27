@@ -337,7 +337,7 @@ class GameInstance {
                         gameid: this.gameid,
                         type: 'PLAYER_GUESS',
                         player: this.players[playerNumber].data,
-                        response: response
+                        location
                     }
                 }
         

@@ -138,8 +138,9 @@ export class GameServer {
 
                 // If the game isn't in memory, we need to fetch it
                 if (!game){
-                    const existingGameState = await knex('game').first('state').where({ id: gameid})
-                    game = new GameInstance({ gameid })
+                    const existing = await knex('game').first().where({ id: gameid})
+                    const existingState = existing.state ? existing.state : { gameid }
+                    game = new GameInstance(existingState)
                     this.games[gameid] = game
                 }
 
@@ -172,7 +173,8 @@ export class GameServer {
 
                 // Persisting after every authenticated message should be fine?
                 // TODO: think about persisting...
-                game.persist()
+                await game.persist()
+                return
             })
         })
     }

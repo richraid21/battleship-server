@@ -35,12 +35,34 @@ class GameBoard {
         this.board = {
             piecesPlaced: 0,
             piecesSank: 0,
-            nodes: new Array(this.width)
+            nodes: []
         }
 
-        for (let i=0; i< this.width;i++){
-            this.board.nodes[i] = new Array(this.height).fill({ guessed: false })
+        for (let i = 0; i < this.height; i++) {
+            this.board.nodes.push([])
+            for (let j = 0; j < this.width; j++) {
+                this.board.nodes[i].push({
+                    x: j,
+                    y: i,
+                    guessed: false
+                })
+            }
         }
+
+        if (config.board){
+            this.setup(config)
+        }
+    }
+
+    setup(config){
+        const board = config.board
+        
+        if (board.piecesPlaced)
+            this.board.piecesPlaced = board.piecesPlaced
+        if (board.piecesSank)
+            this.board.piecesSank = board.piecesSank
+        if (board.nodes && board.nodes.length > 0)
+            this.board.nodes = board.nodes
     }
 
     toJson() {
@@ -103,7 +125,7 @@ class GameBoard {
 
         // Check to make sure a piece doesnt already exist at one of the x,y pair locations
         points.forEach((p) => {
-            if (this.board.nodes[p.x][p.y].name)
+            if (this.board.nodes[p.y][p.x].name)
                 throw new Error('Piece already exists at that location')
         });
 
@@ -120,7 +142,7 @@ class GameBoard {
 
         // Generate the nodes for the piece
         points.forEach((p) => {
-            this.board.nodes[p.x][p.y] = node(name, p.x, p.y)
+            this.board.nodes[p.y][p.x] = node(name, p.x, p.y)
         })
 
         // Return the board object
@@ -130,7 +152,7 @@ class GameBoard {
     }
 
     guessLocation(location) {
-        const n = this.board.nodes[location.x][location.y]
+        const n = this.board.nodes[location.y][location.x]
         let response = {
             result: ''
         }

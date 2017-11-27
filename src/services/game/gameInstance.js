@@ -25,14 +25,18 @@ const VALID_GAME_STATES = {
 class GameInstance {
     constructor(config = {}){
         
-        this.gameid = config.gameid || 0
+        this.gameid = 0
 
-        this.currentState = config.currentState || 'CREATING'
-        this.currentPlayer = config.currentPlayer || false
+        this.currentState = 'CREATING'
+        this.currentPlayer = false
         
         this.players = {
             // Structure....
             // 1: { board: new GameBoard(), data: {}, socket: null }
+        }
+
+        if (config){
+            this.setup(config)
         }
 
         if (config.players){
@@ -42,7 +46,7 @@ class GameInstance {
 
     async persist(){
         const state = this.toJson()
-        
+
         try {
             const res = await knex('game').update({ status: this.currentState, state }).where({id: this.gameid})
             return true
@@ -72,6 +76,17 @@ class GameInstance {
         })
 
         return data
+    }
+
+    setup(config){
+        if (config.gameid)
+            this.gameid = config.gameid
+       
+        if (config.currentPlayer)
+            this.currentPlayer = config.currentPlayer
+
+        if (config.currentState)
+            this.currentState = config.currentState
     }
 
     fillExistingPlayers(config = {}){
@@ -172,9 +187,12 @@ class GameInstance {
                     }
                 }
 
-                await knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event)
+                .catch((e) => {
                     winston.log('warn', 'Unable to log action', event.action, e)
                 })
+
+                await this.persist()
 
                 player.socket.json({ type: 'GAME:PIECES:ACCEPT', payload: board})
 
@@ -241,7 +259,8 @@ class GameInstance {
         event.action.loser = this.players[loser].data
 
         //Log game over
-        await knex('game_action').insert(event).catch((e) => {
+        await knex('game_action').insert(event)
+        .catch((e) => {
             winston.log('warn', 'Unable to log game_over event', event.action, e)
         })
 
@@ -261,6 +280,8 @@ class GameInstance {
         await this.transitionState('COMPLETED')
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner, loser: event.action.loser})
+
+        await this.persist()
 
         return true
 
@@ -285,7 +306,8 @@ class GameInstance {
     }
 
     getOpponent(){
-        return this.currentPlayer === 1 ? 2 : 1
+        const o = this.currentPlayer === 1 ? 2 : 1
+        return o
     }
 
     getCurrentPlayerTargetBoard(){
@@ -319,7 +341,8 @@ class GameInstance {
                     }
                 }
         
-                await knex('game_action').insert(event).catch((e) => {
+                await knex('game_action').insert(event)
+                .catch((e) => {
                     winston.log('warn', 'Unable to log player guess', event.action, e)
                 })
                 
@@ -328,6 +351,8 @@ class GameInstance {
                 const gameOver = await this.isGameOver()
                 if (!gameOver)
                     this.nextPlayer()
+
+                await this.persist()
             
             } catch (e) {
                 winston.log('warn', 'Game Guess Error', { gameid: this.gameid, location }, e)
@@ -339,11 +364,15 @@ class GameInstance {
     }
 
     messageToPlayer(playerNumber, type = '', message = '', payload = {}){
-        this.players[playerNumber].socket.json({
-            type,
-            message,
-            payload
-        })
+        const socket = this.players[playerNumber].socket
+        if (socket){
+            socket.json({
+                type,
+                message,
+                payload
+            })
+        }
+        
     }
 
     broadcastStateChange(state, message = ''){
@@ -395,11 +424,21 @@ class GameInstance {
         if (!playerNumber > 0 || !socket.json || !data.id){
             winston.log('warn', 'addPlayerConnection called without proper parameters', playerNumber, socket, data)
         }
+      
+        let firstTimeJoin // false | true
         
-        const player = {
-            board: new GameBoard(),
-            data: data,
-            socket: socket
+        const existing = this.players[playerNumber]
+        if (existing){
+            firstTimeJoin = false
+        } else {
+            firstTimeJoin = true
+        }
+        
+        const info = existing || {}
+        let player = {
+            socket,
+            board: info.board || new GameBoard(),
+            data: info.data || data
         }
 
         this.players[playerNumber] = player
@@ -415,17 +454,34 @@ class GameInstance {
             }
         }
 
-        await knex('game_action').insert(event).catch((e) => {
+        await knex('game_action').insert(event)
+        .catch((e) => {
             winston.log('warn', 'Unable to PLAYER_JOIN action', event.action, e)
         })
 
-        if (this.isPlayerHere(1) && this.isPlayerHere(2)){
-            await this.transitionState('SETUP')
-            this.broadcastStateChange('SETUP', 'Setup your pieces!')
+        await this.persist()
+
+        // If the player is joining for the first time, we check to see if now both players are here
+        if (firstTimeJoin){
+            if (this.isPlayerHere(1) && this.isPlayerHere(2)){
+                // If both players are here after someones first time joining, we can transition to SETUP
+                await this.transitionState('SETUP')
+                this.broadcastStateChange('SETUP', 'Setup your pieces!')
+            } else {
+                //If one player is missing, we still have to wait
+                await this.transitionState('WAITING')
+                this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
+            }
         } else {
-            await this.transitionState('WAITING')
-            this.broadcastStateChange('WAITING', 'Waiting for all players to join!')
+            // If this is not the players first time joining, aka reconnecting, we just send them the current state
+            // and other information
+            this.messageToPlayer(playerNumber, 'GAME:STATE', 'Welcome back', { state: this.currentState })
+
+            // TODO: what to send back?
         }
+
+
+        
     }
 
 }

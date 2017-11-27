@@ -1,6 +1,10 @@
 const GameInstance = require('../../../src/services/game/GameInstance')
 const knex = require('../../../src/services/data').default
 import _ from 'lodash'
+const knex = require('../../../src/services/data').default
+const winston = require('winston')
+
+
 
 describe('Game Instance Unit Tests', () => {
 
@@ -247,6 +251,38 @@ describe('Game Instance Unit Tests', () => {
         expect(game.currentState).toBe('INPROGRESS')
     })
 
+      it('Should persist the state of the game', async () => {
+        
+        const actions = await knex('game_action').select().where({ gameid: 10000 })
+
+        expect(actions.length).toBe(11)
+        expect(actions[8].action.type).toBe('STATE_CHANGE')
+
+        const gameState = await knex('game').first().where({ id: 10000 })
+        const state = gameState.state
+
+        expect(state).toBeTruthy()
+
+
+        expect(state.gameid).toBe(10000)
+        expect(Object.keys(state.players).length).toBe(2)
+        expect(state.currentState).toBe('INPROGRESS')
+        expect(state.currentPlayer).toBe(1)
+
+    })
+
+    it('Should renew the state of the game from the persisted representation', async () => {
+        const gameState = await knex('game').first().where({ id: 10000 })
+        const state = gameState.state
+
+        expect(state).toBeTruthy()
+
+        const instance = new GameInstance(state)
+
+        expect(instance.toJson()).toEqual(game.toJson())
+
+    })
+  
     it('Should mark a game as complete and record the stats', async () => {
         
         game._forceGameOver()
@@ -297,5 +333,6 @@ describe('Game Instance Unit Tests', () => {
         expect(player2.wins).toBe(0)
         expect(player2.losses).toBe(1)
     })
+
 
 })

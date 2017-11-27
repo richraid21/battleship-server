@@ -1,4 +1,5 @@
 const GameInstance = require('../../../src/services/game/GameInstance')
+const knex = require('../../../src/services/data').default
 import _ from 'lodash'
 
 describe('Game Instance Unit Tests', () => {
@@ -10,6 +11,19 @@ describe('Game Instance Unit Tests', () => {
         player2: {
             json: jest.fn()   
         }
+    }
+
+    const data = {
+        player1: {
+            id: 10000,
+            rank: 1200,
+            username: 'rich'
+        },
+        player2: {
+            id: 20000,
+            rank: 1200,
+            username: 'will'
+        },
     }
     
     beforeEach(() => {
@@ -29,9 +43,18 @@ describe('Game Instance Unit Tests', () => {
     
     it('Should allow a player to join', async () => {
         expect.assertions(3)
-        await game.addPlayerConnection(1, sockets.player1)
+        await game.addPlayerConnection(1, sockets.player1, data.player1)
         
-        const playerJoined = {"message": "Player 1 joined", "payload": {}, "type": "GAME:PLAYER:JOIN"}
+        const playerJoined = {
+            message: "Player 1 joined", 
+            payload: {
+                id: data.player1.id,
+                rank: data.player1.rank,
+                username: data.player1.username
+            }, 
+            type: "GAME:PLAYER:JOIN"
+        }
+
         expect(player1).toBeCalledWith(playerJoined)
         
         const gameStateWaiting = {"message": "Waiting for all players to join!", "payload": {"state": "WAITING"}, "type": "GAME:STATE"}
@@ -42,9 +65,18 @@ describe('Game Instance Unit Tests', () => {
     
     it('Should allow a second player to join', async () => {
         expect.assertions(6)
-        await game.addPlayerConnection(2, sockets.player2)
+        await game.addPlayerConnection(2, sockets.player2, data.player2)
 
-        const playerJoined = {"message": "Player 2 joined", "payload": {}, "type": "GAME:PLAYER:JOIN"}
+        const playerJoined = {
+            message: "Player 2 joined", 
+            payload: {
+                id: data.player2.id,
+                rank: data.player2.rank,
+                username: data.player2.username
+            }, 
+            type: "GAME:PLAYER:JOIN"
+        }
+
         expect(player1).toBeCalledWith(playerJoined)
         expect(player2).toBeCalledWith(playerJoined)
         
@@ -122,7 +154,18 @@ describe('Game Instance Unit Tests', () => {
         expect(player2).toBeCalledWith(state)
 
         // Player turn broadcast
-        const turn = { type: 'GAME:PLAYER:TURN', message: 'It is player 1 turn', payload: { player: {} } }
+        const turn = { 
+            type: 'GAME:PLAYER:TURN', 
+            message: 'It is player 1 turn', 
+            payload: { 
+                player: {
+                    id: data.player1.id,
+                    rank: data.player1.rank,
+                    username: data.player1.username
+                } 
+            } 
+        }
+
         expect(player1).toBeCalledWith(turn)
         expect(player2).toBeCalledWith(turn)
         
@@ -144,7 +187,7 @@ describe('Game Instance Unit Tests', () => {
     it('Should accept a guess when it is the players turn', async () => {
         expect.assertions(7)
 
-        await game.guessLocation(1, {x: 1, y: 1})
+        await game.guessLocation(1, {x: 5, y: 1})
 
         const accept = player1.mock.calls[0][0]
 
@@ -155,7 +198,18 @@ describe('Game Instance Unit Tests', () => {
         expect(opponentNotification.type).toBe('GAME:GUESS:OPPONENT')
         expect(opponentNotification.payload.result).toBe('HIT')
         
-        const nextPlayer = { type: 'GAME:PLAYER:TURN', message: 'It is player 2 turn', payload: { player: {} } } 
+        const nextPlayer = { 
+            type: 'GAME:PLAYER:TURN', 
+            message: 'It is player 2 turn', 
+            payload: { 
+                player: {
+                    id: data.player2.id,
+                    rank: data.player2.rank,
+                    username: data.player2.username
+                } 
+            } 
+        } 
+
         expect(player1).toBeCalledWith(nextPlayer)
         expect(player2).toBeCalledWith(nextPlayer)
         
@@ -175,12 +229,73 @@ describe('Game Instance Unit Tests', () => {
         expect(opponentNotification.type).toBe('GAME:GUESS:OPPONENT')
         expect(opponentNotification.payload.result).toBe('MISS')
         
-        const nextPlayer = { type: 'GAME:PLAYER:TURN', message: 'It is player 1 turn', payload: { player: {} } } 
+        const nextPlayer = { 
+            type: 'GAME:PLAYER:TURN', 
+            message: 'It is player 1 turn', 
+            payload: { 
+                player: {
+                    id: data.player1.id,
+                    rank: data.player1.rank,
+                    username: data.player1.username
+                } 
+            } 
+        } 
         expect(player1).toBeCalledWith(nextPlayer)
         expect(player2).toBeCalledWith(nextPlayer)
         
         expect(game.currentPlayer).toBe(1)
         expect(game.currentState).toBe('INPROGRESS')
+    })
+
+    it('Should mark a game as complete and record the stats', async () => {
+        
+        game._forceGameOver()
+        await game.guessLocation(1, {x: 5, y: 2})
+        
+        expect(player1).toHaveBeenCalledTimes(3)
+
+        const accept = player1.mock.calls[0][0]
+        expect(accept.type).toBe('GAME:GUESS:ACCEPT')
+        expect(accept.payload.result).toBe('SANK')
+
+        const over = player1.mock.calls[1][0]
+        expect(over.type).toBe('GAME:STATE')
+        expect(over.payload.state).toBe('COMPLETED')
+
+        const winner = player1.mock.calls[2][0]
+        expect(winner.type).toBe('GAME:OVER')
+        expect(winner.payload.winner).toEqual(data.player1)
+        expect(winner.payload.loser).toEqual(data.player2)
+    })
+
+    it('Should persist the stats and information to the database after the game', async () => {
+        const actions = await knex('game_action').select().where({ gameid: 10000})
+
+        const join1 = _.find(actions, { action: { type: 'PLAYER_JOIN', player: { id: data.player1.id }}})
+        const join2 = _.find(actions, { action: { type: 'PLAYER_JOIN', player: { id: data.player2.id }}})
+        
+        expect(join1).toBeTruthy()
+        expect(join2).toBeTruthy()
+
+        const over = _.find(actions, { action: { type: 'GAME_OVER' }})
+        expect(over).toBeTruthy()
+
+        const result = await knex('game_result').first().where({ gameid: 10000 })
+        expect(result).toBeTruthy()
+        expect(result.winner).toBe(data.player1.id)
+        expect(result.loser).toBe(data.player2.id)
+
+        const player1 = await knex('user').first().where({ id: data.player1.id })
+        expect(player1).toBeTruthy()
+        expect(player1.rank).toBeGreaterThan(1200)
+        expect(player1.wins).toBe(1)
+        expect(player1.losses).toBe(0)
+
+        const player2 = await knex('user').first().where({ id: data.player2.id })
+        expect(player2).toBeTruthy()
+        expect(player2.rank).toBeLessThan(1200)
+        expect(player2.wins).toBe(0)
+        expect(player2.losses).toBe(1)
     })
 
 })

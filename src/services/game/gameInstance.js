@@ -2,6 +2,8 @@ const GameBoard = require('./GameBoard')
 const knex = require('../data').default
 const winston = require('winston')
 
+import RankService from '../ranking/index'
+
 const VALID_GAME_STATES = {
     'CREATING': {
         description: 'Creating'
@@ -197,12 +199,19 @@ class GameInstance {
         }
 
     }
-
+    _forceGameOver(){
+        this._FORCE_GAME_OVER = true
+    }
     async isGameOver(){
-        const player1Lost = this.players[1].board.isGameOver()
-        const player2Lost = this.players[2].board.isGameOver()
+        let player1Lost = this.players[1].board.isGameOver()
+        let player2Lost = this.players[2].board.isGameOver()
 
         // If neither player lost, the game is still going, return false
+        if (this._FORCE_GAME_OVER){
+            player1Lost = false
+            player2Lost = true
+        }
+
         if (!player1Lost && !player2Lost)
             return false
         
@@ -248,6 +257,7 @@ class GameInstance {
         
         
         //Transition to completed
+        await this.recordStats(event.action.winner, event.action.loser)
         await this.transitionState('COMPLETED')
         this.broadcastStateChange('COMPLETED', 'The game has ended!')
         this.broadcastMessage('GAME:OVER', `Player ${player1Lost ? 2 : 1} won!`, { winner: event.action.winner, loser: event.action.loser})
@@ -256,9 +266,28 @@ class GameInstance {
 
     }
 
+    async recordStats(winner, loser) {
+        const rs = new RankService()
+        const newRanks = rs.matchup(winner, loser).winner(1).newRanks()
+        
+        const winnerRank = newRanks.player1.rank
+        const loserRank = newRanks.player2.rank
+        
+        try {
+            await knex('user').update({ rank: winnerRank, wins: knex.raw('wins + 1')}).where({ id: winner.id})
+            await knex('user').update({ rank: loserRank, losses: knex.raw('losses + 1')}).where({ id: loser.id})
+        } catch (err) {
+            winston.log('warn', 'Could not update stats', err)
+        }
+
+        return true
+
+    }
+
     getOpponent(){
         return this.currentPlayer === 1 ? 2 : 1
     }
+
     getCurrentPlayerTargetBoard(){
         return this.players[this.getOpponent()].board
     }
@@ -362,7 +391,11 @@ class GameInstance {
         return false
     }
 
-    async addPlayerConnection(playerNumber, socket, data = {}){
+    async addPlayerConnection(playerNumber, socket = {}, data = {}){
+        if (!playerNumber > 0 || !socket.json || !data.id){
+            winston.log('warn', 'addPlayerConnection called without proper parameters', playerNumber, socket, data)
+        }
+        
         const player = {
             board: new GameBoard(),
             data: data,

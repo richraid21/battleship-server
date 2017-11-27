@@ -51,7 +51,10 @@ const _validateUserCredentials = async (knex, credentials = {}) => {
             const _user = {
                 id: user.id,
                 nickname: user.nickname,
-                datecreated: user.datecreated
+                datecreated: user.datecreated,
+                rank: user.rank,
+                wins: user.wins,
+                losses: user.losses
             }
             
             return _user
@@ -94,6 +97,9 @@ const register = async (req, res) => {
                 return res.send(200, { 
                     username: user.nickname, 
                     datecreated: user.datecreated,
+                    rank: user.rank,
+                    wins: user.wins,
+                    losses: user.losses,
                     auth: {
                         token: session.number,
                         expires: session.expires
@@ -133,6 +139,9 @@ const login = async (req, res) => {
             return res.send(200, { 
                 username: user.nickname, 
                 datecreated: user.datecreated,
+                rank: user.rank,
+                wins: user.wins,
+                losses: user.losses,
                 auth: {
                     token: session.number,
                     expires: session.expires
@@ -160,6 +169,9 @@ const refresh = async (req, res) => {
         return res.send(200, { 
             username: user.username, 
             datecreated: user.datecreated,
+            rank: user.rank,
+            wins: user.wins,
+            losses: user.losses,
             auth: {
                 token: session.number,
                 expires: session.expires
@@ -175,7 +187,10 @@ const refresh = async (req, res) => {
 const me = (req, res) => {
     const user = {
         username: req._user.username,
-        datecreated: req._user.datecreated
+        datecreated: req._user.datecreated,
+        rank: req._user.rank,
+        wins: req._user.wins,
+        losses: req._user.losses
     }
     res.send(200, user)
 }

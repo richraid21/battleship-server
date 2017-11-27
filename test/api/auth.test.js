@@ -25,12 +25,20 @@ describe('Auth Routes', async () => {
         const res = await request(app).post('/api/auth/register').send(body)
         expect(res.statusCode).toBe(200)
 
-        expect(Object.keys(res.body).length).toBe(3)
+        expect(Object.keys(res.body).length).toBe(6)
         expect(Object.keys(res.body.auth).length).toBe(2)
 
         expect(res.body).toHaveProperty('username')
         expect(res.body).toHaveProperty('datecreated')
         expect(res.body).toHaveProperty('auth')
+        expect(res.body).toHaveProperty('rank')
+        expect(res.body).toHaveProperty('wins')
+        expect(res.body).toHaveProperty('losses')
+
+        expect(res.body.rank).toBe(1200) // Default ELO score
+        expect(res.body.wins).toBe(0)
+        expect(res.body.losses).toBe(0)
+
         expect(res.body.auth).toHaveProperty('token')
         expect(res.body.auth).toHaveProperty('expires')
     })
@@ -65,12 +73,20 @@ describe('Auth Routes', async () => {
         const res = await request(app).post('/api/auth/login').send(body)
         expect(res.statusCode).toBe(200)
 
-        expect(Object.keys(res.body).length).toBe(3)
+        expect(Object.keys(res.body).length).toBe(6)
         expect(Object.keys(res.body.auth).length).toBe(2)
 
         expect(res.body).toHaveProperty('username')
         expect(res.body).toHaveProperty('datecreated')
         expect(res.body).toHaveProperty('auth')
+        expect(res.body).toHaveProperty('rank')
+        expect(res.body).toHaveProperty('wins')
+        expect(res.body).toHaveProperty('losses')
+
+        expect(res.body.rank).toBe(1200) // Default ELO score
+        expect(res.body.wins).toBe(0)
+        expect(res.body.losses).toBe(0)
+
         expect(res.body.auth).toHaveProperty('token')
         expect(res.body.auth).toHaveProperty('expires')
     })
@@ -97,22 +113,38 @@ describe('Auth Routes', async () => {
         const token = login.body.auth.token
 
         //Get new token2, invalidate token1
-        const refresh = await request(app).post('/api/auth/refresh').set('Authorization', `Basic ${token}`)
-        expect(refresh.statusCode).toBe(200)
-        const _token = refresh.body.auth.token
+        const res = await request(app).post('/api/auth/refresh').set('Authorization', `Basic ${token}`)
+        expect(res.statusCode).toBe(200)
+        
+        expect(Object.keys(res.body).length).toBe(6)
+        expect(Object.keys(res.body.auth).length).toBe(2)
+
+        expect(res.body).toHaveProperty('username')
+        expect(res.body).toHaveProperty('datecreated')
+        expect(res.body).toHaveProperty('auth')
+        expect(res.body).toHaveProperty('rank')
+        expect(res.body).toHaveProperty('wins')
+        expect(res.body).toHaveProperty('losses')
+
+        expect(res.body.rank).toBe(1200) // Default ELO score
+        expect(res.body.wins).toBe(0)
+        expect(res.body.losses).toBe(0)
+        
+        expect(res.body.auth).toHaveProperty('token')
+        expect(res.body.auth).toHaveProperty('expires')
+        
+        const _token = res.body.auth.token
 
         //Should reject
         const oldTokenMe = await request(app).get('/api/auth/me').set('Authorization', `Basic ${token}`)
         expect(oldTokenMe.statusCode).toBe(401)
         
         //Should resolve
-        const newTokenMe = await request(app).get('/api/auth/me').set('Authorization', `Basic ${_token}`)
-        expect(newTokenMe.statusCode).toBe(200)
-        
-        expect(Object.keys(newTokenMe.body).length).toBe(2)
+        const valid = await request(app).get('/api/auth/me').set('Authorization', `Basic ${_token}`)
+        expect(valid.statusCode).toBe(200)
 
-        expect(newTokenMe.body).toHaveProperty('username')
-        expect(newTokenMe.body).toHaveProperty('datecreated')
+        expect(valid.body).toHaveProperty('username')
+        
     })
 
     test('/me - Should return user profile', async () => {
@@ -125,8 +157,16 @@ describe('Auth Routes', async () => {
         expect(login.statusCode).toBe(200)
         const token = login.body.auth.token
 
-        const me = await request(app).get('/api/auth/me').set('Authorization', `Basic ${token}`)
-        expect(me.statusCode).toBe(200)
+        const res = await request(app).get('/api/auth/me').set('Authorization', `Basic ${token}`)
+        expect(res.statusCode).toBe(200)
+
+        expect(Object.keys(res.body).length).toBe(5)
+
+        expect(res.body).toHaveProperty('username')
+        expect(res.body).toHaveProperty('datecreated')
+        expect(res.body).toHaveProperty('rank')
+        expect(res.body).toHaveProperty('wins')
+        expect(res.body).toHaveProperty('losses')
     })
 
     test('/logout - Should destroy current session', async () => {

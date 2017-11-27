@@ -14,7 +14,7 @@
 
 import { retrieveUserFromSession, buildUserObjectFromSession } from '../../api/middleware/authentication'
 import GameInstance from './GameInstance'
-import { singleGameQueryWithPlayer } from '../../api/routes/games'
+import { singleActiveGameQueryWithPlayer } from '../../api/routes/games'
 const knex = require('../../services/data').default
 
 
@@ -119,7 +119,7 @@ export class GameServer {
                 const gameid = req.gameid
                 const player = buildUserObjectFromSession(session)
                 
-                const result = await knex.raw(singleGameQueryWithPlayer, [gameid, player.id, player.id])
+                const result = await knex.raw(singleActiveGameQueryWithPlayer, [gameid, player.id, player.id])
                 
                 if (result.rows.length == 0){
                     socket.json({type: 'AUTH:REJECT', message: 'You are not part of this game!'})

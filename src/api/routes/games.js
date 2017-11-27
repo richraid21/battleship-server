@@ -33,6 +33,10 @@ export const singleGameQueryWithPlayer = singleGameQuery + `
         AND (g.player1 = ? OR g.player2 = ?)
 `
 
+export const singleActiveGameQueryWithPlayer = singleGameQueryWithPlayer + `
+        AND g.status != 'COMPLETED'
+`
+
 const getGames = async (req, res) => {
     try {
 
@@ -173,7 +177,14 @@ const gameHistory = async (req, res) => {
         return malformedError(res, 'Requires a valid integer')
 
     try {
-        const columns = ['datecreated', 'action']
+        
+        // Ensure its over before showing move history
+        const status = await req._knex('game').first('status').where({ id: gameid})
+        if (status != 'COMPLETED')
+            forbiddenError(res, 'This game is not over yet!')
+
+        // Ayoooo
+        const columns = ['gameid', 'datecreated', 'action']
         const history = await req._knex('game_action').select(columns).where({ gameid }).orderBy('datecreated')
 
         res.send(200, history)

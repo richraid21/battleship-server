@@ -1,7 +1,6 @@
 const GameInstance = require('../../../src/services/game/GameInstance')
 const knex = require('../../../src/services/data').default
 import _ from 'lodash'
-const knex = require('../../../src/services/data').default
 const winston = require('winston')
 
 

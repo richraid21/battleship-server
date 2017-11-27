@@ -25,7 +25,10 @@ export const buildUserObjectFromSession = (session) => {
     return {
         id: session.id,
         username: session.nickname,
-        datecreated: session.datecreated
+        datecreated: session.datecreated,
+        rank: session.rank,
+        wins: session.wins,
+        losses: session.losses
     }
 }
 

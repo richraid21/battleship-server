@@ -30,6 +30,7 @@ class GameBoard {
         
         this.height = 10
         this.width = 10
+        this.gamePieces = config.pieces || PIECES
 
         this.board = {
             piecesPlaced: 0,
@@ -75,11 +76,13 @@ class GameBoard {
     }
 
     isGameOver(){
-        return this.board.piecesPlaced === this.board.piecesSank
+        const gameOver = (this.board.piecesPlaced === this.board.piecesSank)
+        // console.log('GAME OVER', this.board.piecesPlaced, this.board.piecesSank)
+        return gameOver
     }
 
     allPiecesPlaced() {
-        return this.board.piecesPlaced === Object.keys(PIECES).length
+        return this.board.piecesPlaced === Object.keys(this.gamePieces).length
     }
 
     placeShips(ships) {
@@ -101,11 +104,11 @@ class GameBoard {
     placePiece(name, points) {
         
         // Must be a valid piece in the list of accepted keys
-        if (!PIECES.hasOwnProperty(name))
+        if (!this.gamePieces.hasOwnProperty(name))
             throw new Error('Invalid Piece Name')
 
         // The number of x,y points must be the same as the length of the ship piece
-        const ship = PIECES[name]
+        const ship = this.gamePieces[name]
         if (!points.length === ship.length)
             throw new Error('Invalid number of points for specified ship')
 
@@ -174,7 +177,7 @@ class GameBoard {
             // ship as sank and return the name of the sunken ship
             
             const hitCount = this.getHitNodesByShipName(n.name).length
-            if (hitCount === PIECES[n.name].length){
+            if (hitCount === this.gamePieces[n.name].length){
                 this.board.piecesSank++
                 this.markShipSank(n.name)
                 response.result = 'SANK'

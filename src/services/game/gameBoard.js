@@ -154,7 +154,9 @@ class GameBoard {
     guessLocation(location) {
         const n = this.board.nodes[location.y][location.x]
         let response = {
-            result: ''
+            result: '',
+            guess_x: location.x,
+            guess_y: location.y
         }
         
         // If no current node, nothing is there and it is a miss

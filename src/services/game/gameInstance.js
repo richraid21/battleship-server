@@ -482,7 +482,7 @@ class GameInstance {
                     board: this.players[playerNumber].board.view()
                 },
                 opponent: {
-                    board: this.players[getOpponent()].board.restrictedView()
+                    board: this.players[(playerNumber === 1 ? 2 : 1)].board.restrictedView()
                 }
             }
             

@@ -1,4 +1,4 @@
-const GameBoard = require('./GameBoard')
+const GameBoard = require('./gameBoard')
 const knex = require('../data').default
 const winston = require('winston')
 

@@ -486,7 +486,6 @@ class GameInstance {
                 }
             }
             
-            
             this.messageToPlayer(playerNumber, 'GAME:PLAYER:RECONNECT', '', message)
             this.setCurrentPlayer(this.currentPlayer)
         }

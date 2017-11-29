@@ -168,7 +168,6 @@ class GameBoard {
 
         
         n.guessed = true
-
         if (!n.name){
             response.result = 'MISS'
         } else {
@@ -216,11 +215,37 @@ class GameBoard {
     }
     
     view() {
-        return _.assign({}, this.board)
+        return _.cloneDeep(this.board)
     }
 
     restrictedView() {
-        return this.view()   
+
+        // view() returns a deeply clones rep of the board
+        const view = this.view()
+        const nodes = view.nodes
+
+        nodes.forEach((column)=>{
+            column.forEach((node)=>{
+                
+                // For each node in the board, if it hasnt been guessed, 
+                // they are not allowed to see it, so we delete hit status, sank status and the name
+                if (!node.guessed){
+                    delete node.hit
+                    delete node.sank
+                    delete node.name
+                }
+
+                // If it has been guessed, but not sank, we still need to hide the name
+                // because it gives clues to how big the ship is
+                if (node.guessed && !node.sank){
+                    delete node.name
+                }
+
+
+            })
+        })
+
+        return this.view()
     }
 
     pickNodes(allNodes, checkFunction){

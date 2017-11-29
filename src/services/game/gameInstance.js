@@ -475,9 +475,20 @@ class GameInstance {
         } else {
             // If this is not the players first time joining, aka reconnecting, we just send them the current state
             // and other information
-            this.messageToPlayer(playerNumber, 'GAME:STATE', 'Welcome back', { state: this.currentState })
-
-            // TODO: what to send back?
+            
+            const message = {
+                state: this.currentState,
+                self: {
+                    board: this.players[playerNumber].board.view()
+                },
+                opponent: {
+                    board: this.players[getOpponent()].board.restrictedView()
+                }
+            }
+            
+            
+            this.messageToPlayer(playerNumber, 'GAME:PLAYER:RECONNECT', '', message)
+            this.setCurrentPlayer(this.currentPlayer)
         }
 
 

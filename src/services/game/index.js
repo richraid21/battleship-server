@@ -13,7 +13,7 @@
  */
 
 import { retrieveUserFromSession, buildUserObjectFromSession } from '../../api/middleware/authentication'
-import GameInstance from './GameInstance'
+import GameInstance from './gameInstance'
 import { singleActiveGameQueryWithPlayer } from '../../api/routes/games'
 const knex = require('../../services/data').default
 

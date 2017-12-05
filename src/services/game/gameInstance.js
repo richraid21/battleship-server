@@ -520,7 +520,7 @@ class GameInstance {
         }
 
         this.players[playerNumber] = player
-        this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, player.data)
+        this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, _.get(player, 'data', data)
         
         const event = {
             gameid: this.gameid,
@@ -528,7 +528,7 @@ class GameInstance {
             action: {
                 gameid: this.gameid,
                 type: 'PLAYER_JOIN',
-                player: player.data
+                player: _.get(player, 'data', data)
             }
         }
 

@@ -25,8 +25,8 @@ const VALID_GAME_STATES = {
 const generateExpirationDate = () => {
     const now = new Date()
     const expires = new Date()
-    expires.setMinutes(now.getMinutes() + 2)
-    //expires.setHours(now.getHours() + 24)
+    //expires.setMinutes(now.getMinutes() + 2)
+    expires.setHours(now.getHours() + 24) // Does this even work like how I think it works? I dont think this is right....
 
     return expires
 }

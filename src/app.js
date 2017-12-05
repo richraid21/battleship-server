@@ -6,7 +6,7 @@ import { migrateToLatest } from './services/data'
 import routes from './api/routes'
 
 // Statically require these two at runtime so the objects get cached
-const logger = require('./services/logger')
+// const logger = require('./services/logger')
 const knex = require('./services/data')
 
 // Expose the application creator which will automatically

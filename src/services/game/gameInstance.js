@@ -451,7 +451,7 @@ class GameInstance {
             action: {
                 gameid: this.gameid,
                 type: 'PLAYER_JOIN',
-                player: _.get(player, 'data', data)
+                player: player['data']
             }
         }
 

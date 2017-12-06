@@ -1,6 +1,7 @@
 const GameBoard = require('./gameBoard')
 const knex = require('../data').default
 const winston = require('winston')
+import _ from 'lodash'
 
 import RankService from '../ranking/index'
 
@@ -514,12 +515,12 @@ class GameInstance {
         const info = existing || {}
         let player = {
             socket,
-            board: info.board || new GameBoard(),
-            data: info.data || data
+            board: _.get(info, 'board', new GameBoard()),
+            data: _.get(info, 'data', data)
         }
 
         this.players[playerNumber] = player
-        this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, player.data)
+        this.broadcastMessage('GAME:PLAYER:JOIN', `Player ${playerNumber} joined`, _.get(player, 'data', data))
         
         const event = {
             gameid: this.gameid,
@@ -527,7 +528,7 @@ class GameInstance {
             action: {
                 gameid: this.gameid,
                 type: 'PLAYER_JOIN',
-                player: player.data
+                player: _.get(player, 'data', data)
             }
         }
 

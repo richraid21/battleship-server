@@ -15,6 +15,7 @@
 import { retrieveUserFromSession, buildUserObjectFromSession } from '../../api/middleware/authentication'
 import GameInstance from './gameInstance'
 import { singleActiveGameQueryWithPlayer } from '../../api/routes/games'
+const winston = require('winston')
 const knex = require('../../services/data').default
 
 
@@ -45,6 +46,24 @@ export class GameServer {
         this.server = server
         
         this.games = {}
+
+        // We use a self-calling setTimeout() call instead of setInterval
+        // Because we want this action to be non-blocking on the node js event queue
+        const expireSweepInterval = 1000 * 30
+        this.expireSweep = () => {
+            // winston.info("Sweeping for expired games")
+            Object.keys(this.games).forEach( async (id) => {
+                const game = this.games[id]
+                if (game.isExpired()){
+                    // winston.info("Game expired")
+                    await game.expireGame()
+                    delete this.games[id]
+                }
+            })
+
+            setTimeout(this.expireSweep, expireSweepInterval)
+        }
+        setTimeout(this.expireSweep, expireSweepInterval)
 
 
         this.server.on('connection', (socket, req) => {
@@ -142,6 +161,15 @@ export class GameServer {
                     const existingState = existing.state ? existing.state : { gameid }
                     game = new GameInstance(existingState)
                     this.games[gameid] = game
+                }
+
+                // Manually force an expiration ahead of the repeating check so 
+                // state doesnt become corrupted if the game expires but an action
+                // is taken before the sweep
+                if (game.isExpired()){
+                    await game.expireGame()
+                    delete this.games[gameid]
+                    return
                 }
 
                 // If player is joining the socket...

@@ -22,6 +22,15 @@ const VALID_GAME_STATES = {
     }
 }
 
+const generateExpirationDate = () => {
+    const now = new Date()
+    const expires = new Date()
+    //expires.setMinutes(now.getMinutes() + 2)
+    expires.setHours(now.getHours() + 24) // Does this even work like how I think it works? I dont think this is right....
+
+    return expires
+}
+
 class GameInstance {
     constructor(config = {}){
         
@@ -29,6 +38,7 @@ class GameInstance {
 
         this.currentState = 'CREATING'
         this.currentPlayer = false
+        this.expirationDate = generateExpirationDate()
         
         this.players = {
             // Structure....
@@ -48,7 +58,8 @@ class GameInstance {
         const state = this.toJson()
 
         try {
-            const res = await knex('game').update({ status: this.currentState, state }).where({id: this.gameid})
+            this.expirationDate = generateExpirationDate()
+            const res = await knex('game').update({ status: this.currentState, state, expires: this.expirationDate }).where({id: this.gameid})
             return true
         } catch (e) {
             winston.log('warn', 'Could not persist in-memory game: ', e, state)
@@ -87,6 +98,69 @@ class GameInstance {
 
         if (config.currentState)
             this.currentState = config.currentState
+
+        if (config.expires){
+            this.expirationDate = new Date(config.expires)
+        }
+    }
+
+    isExpired(){
+        const now = new Date()
+        const expired = (now >= this.expirationDate)
+        return expired
+    }
+
+    async expireGame(){
+        
+        // Expirary Event
+        const event = { 
+            gameid: this.gameid, 
+            datecreated: knex.fn.now(), 
+            action: {
+                gameid: this.gameid,
+                type: 'GAME_EXPIRED',
+            }
+        }
+
+        await knex('game_action').insert(event)
+        .catch((e) => {
+            winston.log('warn', 'Unable to log expiration transition', event.action, e)
+        })
+
+        // Game over event
+        const winner = this.players[this.getOpponent()]
+        const _winner = winner ? winner.data : {}
+        
+        const loser = this.players[this.currentPlayer]
+        const _loser = loser ? loser.data : {}
+
+        let event2 = {
+            gameid: this.gameid,
+            datecreated: knex.fn.now(),
+            action: {
+                gameid: this.gameid,
+                type: 'GAME_OVER',
+                winner: _winner,
+                loser: _loser
+            }
+        }
+
+        //Log game over
+        await knex('game_action').insert(event)
+        .catch((e) => {
+            winston.log('warn', 'Unable to log game_over event', event.action, e)
+        })
+
+
+        // Stats and transition
+        await this.recordStats(_winner, _loser)
+        await this.transitionState('COMPLETED')
+        
+        this.broadcastStateChange('COMPLETED', 'The game has ended!')
+        this.broadcastMessage('GAME:OVER', '')
+
+        await this.persist()
+        return true
     }
 
     fillExistingPlayers(config = {}){
@@ -255,8 +329,11 @@ class GameInstance {
             loser = 2
         }
 
-        event.action.winner = this.players[winner].data
-        event.action.loser = this.players[loser].data
+        const w = this.players[winner]
+        event.action.winner = w ? w.data : {}
+
+        const l = this.players[loser]
+        event.action.loser = l ? l.data : {}
 
         //Log game over
         await knex('game_action').insert(event)

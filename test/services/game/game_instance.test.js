@@ -41,6 +41,7 @@ describe('Game Instance Unit Tests', () => {
 
     it('Should initialize', () => {
         expect(game.currentState).toBe('CREATING')
+        expect(game.isExpired()).toBe(false)
         expect(Object.keys(game.players).length).toBe(0)
     })
     
